@@ -207,7 +207,7 @@ class Crosshair:
         self.rect.center = pygame.mouse.get_pos()
     
     def draw(self, screen):
-        # mira na tela
+        # mira na tela.
         screen.blit(self.image, self.rect.topleft)
 
 
