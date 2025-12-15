@@ -3,6 +3,9 @@ import os
 from random import randint
 from pytmx.util_pygame import load_pygame
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
 # Constante que define o tamanho de cada tile do mapa em pixels
 TILE_SIZE = 64
 
@@ -32,7 +35,7 @@ class Game:
         self.player = Player(500, 300, self.player_size, self.collision_sprites)
         
         # Cria a mira
-        mira_path = "projeto/imagemjogo/imagem/mira.png"
+        mira_path = os.path.join(BASE_DIR, "..", "assets", "imagens", "mira.png")
         self.mira = Crosshair(mira_path)
         
         # Carrega o mapa e configura o mundo
@@ -40,7 +43,7 @@ class Game:
 
     def setup(self):
         # Carrega o mapa TMX e cria todos os sprites do mundo
-        map_path = "projeto/data/maps/world.tmx"
+        map_path = os.path.join(BASE_DIR, "..", "data", "maps", "world.tmx")
         
         # Carrega o arquivo TMX usando pytmx
         self.map = load_pygame(map_path)
@@ -105,7 +108,8 @@ class Player:
         self.color = color
         
         # Retângulo para posição e colisão 
-        self.rect = pygame.FRect(x, y, size, size)
+        self.rect = pygame.Rect(x, y, size, size)
+
 
         # Vetor de direção do movimento
         self.direction = pygame.Vector2(0, 0)
