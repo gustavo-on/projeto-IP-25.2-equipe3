@@ -45,6 +45,15 @@ class Game:
         # Carrega o mapa e configura o mundo
         self.setup()
 
+        self.can_shoot = True
+        self.shoot_time = 0
+        self.gun_cooldown = 100
+    
+    def input(self):
+        if pygame.mouse.get_pressed()[0] and self.can_shoot:
+            self.can_shoot = False
+            self.shoot_time = pygame.time.get_ticks()
+
     def setup(self):
         # Carrega o mapa TMX e cria todos os sprites do mundo
         map_path = os.path.join(BASE_DIR, "..", "data", "maps", "world.tmx")
@@ -80,7 +89,9 @@ class Game:
                 if event.type == pygame.QUIT:
                     self.running = False
 
+
             # atualizacão 
+            self.input()
             self.mira.update()        
             self.player.input()       
             self.player.move(dt)      
