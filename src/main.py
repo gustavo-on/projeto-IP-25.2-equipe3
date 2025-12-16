@@ -47,13 +47,13 @@ class Game:
 
         self.can_shoot = True
         self.shoot_time = 0
-        self.gun_cooldown = 100
+        self.gun_cooldown = 200
 
         self.load_images()
     
     def load_images(self):
         self.bullet_surf = pygame.Surface((10, 10))
-        self.bullet_surf.fill("grey")
+        self.bullet_surf.fill("red")
     
     def input(self):
         if pygame.mouse.get_pressed()[0] and self.can_shoot:
