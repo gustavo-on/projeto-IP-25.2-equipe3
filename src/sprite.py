@@ -1,0 +1,9 @@
+import pygame
+
+class Tile(pygame.sprite.Sprite):
+    # Sprite para tiles do mapa, chão
+    def __init__(self, pos, surf, groups):
+        super().__init__(groups)
+        self.image = surf
+        self.rect = self.image.get_frect(topleft = pos)
+        self.ground = True 
