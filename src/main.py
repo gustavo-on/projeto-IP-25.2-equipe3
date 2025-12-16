@@ -5,7 +5,7 @@ from pytmx.util_pygame import load_pygame
 from player import Player
 from allsprites import CameraGroups
 from sprite import Tile
-from collision import CollisionSprite
+from collision import CollisionSprite, Bullet
 from aim import Crosshair
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -48,11 +48,30 @@ class Game:
         self.can_shoot = True
         self.shoot_time = 0
         self.gun_cooldown = 100
+
+        self.load_images()
+    
+    def load_images(self):
+        self.bullet_surf = pygame.Surface((10, 10))
+        self.bullet_surf.fill("grey")
     
     def input(self):
         if pygame.mouse.get_pressed()[0] and self.can_shoot:
+            mouse_pos = pygame.Vector2(pygame.mouse.get_pos())
+            player_pos = pygame.Vector2(self.player.rect.center)
+            player_screen_pos = player_pos + self.all_sprites.offset
+
+            direction = (mouse_pos - player_screen_pos).normalize()
+
+            Bullet(surf=self.bullet_surf, pos=self.player.rect.center, direction=direction, groups=self.all_sprites)
             self.can_shoot = False
             self.shoot_time = pygame.time.get_ticks()
+    
+    def gun_timer(self):
+        if not self.can_shoot:
+            current_time = pygame.time.get_ticks() 
+            if current_time - self.shoot_time >= self.gun_cooldown:
+                self.can_shoot = True
 
     def setup(self):
         # Carrega o mapa TMX e cria todos os sprites do mundo
@@ -83,7 +102,7 @@ class Game:
         while self.running:
             # Calcula delta time
             dt = self.clock.tick() / 1000
-
+            self.all_sprites.update(dt)
             
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -91,6 +110,7 @@ class Game:
 
 
             # atualizacão 
+            self.gun_timer()
             self.input()
             self.mira.update()        
             self.player.input()       

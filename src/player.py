@@ -11,7 +11,6 @@ class Player:
         # Retângulo para posição e colisão 
         self.rect = pygame.Rect(x, y, size, size)
 
-
         # Vetor de direção do movimento
         self.direction = pygame.Vector2(0, 0)
         self.speed = 500  
