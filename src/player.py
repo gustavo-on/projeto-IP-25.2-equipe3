@@ -1,22 +1,32 @@
 import pygame
+from entity import Entity
 
-class Player:
-    def __init__(self, x, y, size, collision_sprites, color="blue"):
+class Player(Entity):
+    def __init__(self, x, y, size, groups, collision_sprites, color="blue"):
         # Posição inicial
-        self.x = x
-        self.y = y
-        self.size = size
-        self.color = color
-        
-        # Retângulo para posição e colisão 
-        self.rect = pygame.Rect(x, y, size, size)
 
+        super().__init__(groups)
+
+        self.image = pygame.Surface((size, size))        
+        self.image.fill("blue")
+        
+
+        self.rect = self.image.get_frect(topleft=(x, y))
+        #Status do jogador
+        self.health = 10
+        self.current_health = 10
+        self.damage = 2
+        self.range_size = 30
+
+        self.level = 1
+        self.current_xp = 0
+        self.next_level_up = 10
+        
         # Vetor de direção do movimento
+        self.collision_sprites = collision_sprites
         self.direction = pygame.Vector2(0, 0)
         self.speed = 500  
-        
-        self.collision_sprites = collision_sprites
-        
+
     def input(self):
         keys = pygame.key.get_pressed()
         
@@ -54,3 +64,10 @@ class Player:
                         self.rect.top = sprite.rect.bottom
                     if self.direction.y > 0:
                         self.rect.bottom = sprite.rect.top
+    
+    def die(self):
+        print("Game Over")
+    
+    def update(self, dt):
+        self.input()
+        self.move(dt)
