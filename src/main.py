@@ -101,7 +101,7 @@ class Game:
         #Loop principal 
         while self.running:
             # Calcula delta time
-            dt = self.clock.tick() / 1000
+            dt = self.clock.tick(60) / 1000
             self.all_sprites.update(dt)
             
             for event in pygame.event.get():
