@@ -19,6 +19,9 @@ class Game:
     def __init__(self):
         # Inicializa todos os módulos do Pygame
         pygame.init()
+
+        self.xp = pygame.Surface((20, 20))
+        self.xp.fill("blue")
         
         # Define dimensões da janela
         self.window_width = 1200
@@ -181,6 +184,7 @@ class Game:
                 enemy.health -= self.player.damage
                 if enemy.health <= 0:
                     enemy.kill()
+                    
         
         # Verifica colisão com paredes
         for bullet in self.bullet_sprites:

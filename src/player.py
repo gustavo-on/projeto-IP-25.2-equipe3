@@ -21,7 +21,7 @@ class Player(Entity):
         self.range_size = 30
 
         self.level = 1
-        self.current_xp = 0
+        self.xp = 0
         self.next_level_up = 10
         
         # Vetor de direção do movimento

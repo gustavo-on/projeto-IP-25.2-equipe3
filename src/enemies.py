@@ -1,11 +1,12 @@
 import pygame
+from coletaveis import XP
 
 class Enemy(pygame.sprite.Sprite):
     def __init__(self, pos, frames, groups, player, collision_sprites):
         super().__init__(groups)
         self.player = player
-        
-        # Imagem temporária 
+        self.xp_value = 1
+        # Imagem temporária     
         self.image = pygame.Surface((40, 40))
         self.image.fill("red")
         
@@ -58,3 +59,6 @@ class Enemy(pygame.sprite.Sprite):
     def update(self, dt):
         self.get_direction()
         self.move(dt)
+    
+    def die(self):
+        XP(self.rect.center, self.xp_value, self.groups())
