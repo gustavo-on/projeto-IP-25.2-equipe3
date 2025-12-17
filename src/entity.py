@@ -8,11 +8,15 @@ class Entity(pygame.sprite.Sprite):
         self.frame_index = 0
         self.animation_speed = 6
         self.direction = pygame.Vector2()
+
+        self.health = 10
+        self.current_health = 10
+        self.damage = 1
     
     def take_damage(self, amount):
-        self.health -= amount
+        self.current_health -= amount
 
-        if self.health <= 0:
+        if self.current_health <= 0:
             self.die()
     
     def die(self):

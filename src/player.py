@@ -10,9 +10,11 @@ class Player(Entity):
         self.image = pygame.Surface((size, size))        
         self.image.fill("blue")
         
-
+        self.size = size
         self.rect = self.image.get_frect(topleft=(x, y))
         #Status do jogador
+
+        self.rock_quantities = 0
         self.health = 10
         self.current_health = 10
         self.damage = 2
@@ -25,7 +27,7 @@ class Player(Entity):
         # Vetor de direção do movimento
         self.collision_sprites = collision_sprites
         self.direction = pygame.Vector2(0, 0)
-        self.speed = 500  
+        self.speed = 200  
 
     def input(self):
         keys = pygame.key.get_pressed()
