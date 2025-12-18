@@ -66,7 +66,7 @@ class Game:
 
         # Cria o player
         self.player_size = 50
-        self.player = Player(500, 300, size=50, groups=self.all_sprites, collision_sprites=self.collision_sprites)
+        self.player = Player(100, 300, size=50, groups=self.all_sprites, collision_sprites=self.collision_sprites)
         
         # Cria a mira
         try:
@@ -107,13 +107,13 @@ class Game:
         pygame.time.set_timer(self.enemy_event, self.enemy_spawn_rate)
         
         self.coin_event = pygame.USEREVENT + 2
-        pygame.time.set_timer(self.coin_event, 3000)
+        pygame.time.set_timer(self.coin_event, 2000)
         
         self.banana_event = pygame.USEREVENT + 3
-        pygame.time.set_timer(self.banana_event, 2000)
+        pygame.time.set_timer(self.banana_event, 2500)
         
         self.rock_event = pygame.USEREVENT + 4
-        pygame.time.set_timer(self.rock_event, 4000)
+        pygame.time.set_timer(self.rock_event, 1000)
         
         self.attribute_points = 0
         self.upgrade_buttons = []
@@ -128,7 +128,7 @@ class Game:
         try:
             bullet_path = os.path.join(BASE_DIR, "..", "assets", "images", "pedra.png")
             original_bullet = pygame.image.load(bullet_path).convert_alpha()
-            self.bullet_surf = pygame.transform.scale(original_bullet, (20, 20))
+            self.bullet_surf = pygame.transform.scale(original_bullet, (50, 50))
         except Exception as e:
             self.bullet_surf = pygame.Surface((10, 10))
             self.bullet_surf.fill("red")
@@ -229,7 +229,7 @@ class Game:
             
             pygame.time.set_timer(self.enemy_event, self.enemy_spawn_rate)
             
-            self.enemy_damage = 1 + self.difficulty_level // 2
+            self.enemy_damage = 1 + self.difficulty_level // 6
             self.enemy_health = 1 + self.difficulty_level // 2
             self.enemy_speed = 100 + (self.difficulty_level * 15)
             
@@ -644,7 +644,7 @@ class Game:
         self.player.level = 1
         self.player.next_level_up = 10
         self.player.damage = 2
-        self.player.speed = 500
+        self.player.speed = 300
         self.player.rect.center = self.player_start_pos
         
         self.player_invincible = False

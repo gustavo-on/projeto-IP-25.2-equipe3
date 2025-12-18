@@ -173,7 +173,7 @@ class Rock(pygame.sprite.Sprite):
         try:
             rock_path = os.path.join(BASE_DIR, "..", "assets", "images", "pedra.png")
             original_image = pygame.image.load(rock_path).convert_alpha()
-            self.image = pygame.transform.scale(original_image, (28, 28))
+            self.image = pygame.transform.scale(original_image, (40, 40))
         except:
             # Fallback: desenha uma pedra cinza
             print("⚠️ Imagem pedra.png não encontrada, usando círculo cinza")
