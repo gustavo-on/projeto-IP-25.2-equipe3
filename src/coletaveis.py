@@ -1,5 +1,8 @@
 import pygame
+import os
 from random import uniform
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 class XP(pygame.sprite.Sprite):
     """Orb de XP que dropa quando um inimigo morre"""
@@ -82,14 +85,23 @@ class Coin(pygame.sprite.Sprite):
     def __init__(self, pos, value, groups):
         super().__init__(groups)
         
-        # Visual da moeda (círculo amarelo com borda)
-        self.image = pygame.Surface((24, 24), pygame.SRCALPHA)
-        pygame.draw.circle(self.image, (255, 215, 0), (12, 12), 12)  # Ouro
-        pygame.draw.circle(self.image, (255, 255, 100), (12, 12), 12, 3)  # Borda brilhante
-        pygame.draw.circle(self.image, (200, 160, 0), (12, 12), 7)  # Centro escuro
+        self.value = value
+        
+        # Tenta carregar a imagem da moeda
+        try:
+            moeda_path = os.path.join(BASE_DIR, "..", "assets", "images", "moeda.png")
+            original_image = pygame.image.load(moeda_path).convert_alpha()
+            # Redimensiona para um tamanho adequado
+            self.image = pygame.transform.scale(original_image, (32, 32))
+        except:
+            # Fallback: desenha uma moeda se a imagem não for encontrada
+            print("⚠️ Imagem moeda.png não encontrada, usando círculo")
+            self.image = pygame.Surface((24, 24), pygame.SRCALPHA)
+            pygame.draw.circle(self.image, (255, 215, 0), (12, 12), 12)
+            pygame.draw.circle(self.image, (255, 255, 100), (12, 12), 12, 3)
+            pygame.draw.circle(self.image, (200, 160, 0), (12, 12), 7)
         
         self.rect = self.image.get_rect(center=pos)
-        self.value = value
         
         # Animação de flutuação
         self.float_offset = 0
@@ -101,3 +113,50 @@ class Coin(pygame.sprite.Sprite):
         self.float_offset += self.float_speed * dt
         # Movimento de seno para flutuação suave
         self.rect.centery = self.original_y + int(5 * pygame.math.Vector2(0, 1).rotate(self.float_offset * 100).y)
+
+
+class Banana(pygame.sprite.Sprite):
+    """Banana coletável que restaura vida do jogador"""
+    def __init__(self, pos, heal_amount, groups):
+        super().__init__(groups)
+        
+        self.heal_amount = heal_amount
+        
+        # Tenta carregar a imagem da banana
+        try:
+            banana_path = os.path.join(BASE_DIR, "..", "assets", "images", "banana.png")
+            original_image = pygame.image.load(banana_path).convert_alpha()
+            # Redimensiona para um tamanho adequado
+            self.image = pygame.transform.scale(original_image, (32, 32))
+        except:
+            # Fallback: desenha uma banana se a imagem não for encontrada
+            print("⚠️ Imagem banana.png não encontrada, usando retângulo amarelo")
+            self.image = pygame.Surface((20, 32), pygame.SRCALPHA)
+            # Desenha uma forma de banana simples
+            pygame.draw.ellipse(self.image, (255, 255, 0), (0, 0, 20, 32))
+            pygame.draw.ellipse(self.image, (139, 69, 19), (6, 0, 8, 6))  # Cabinho
+        
+        self.rect = self.image.get_rect(center=pos)
+        
+        # Animação de rotação
+        self.rotation_angle = 0
+        self.rotation_speed = 100
+        self.original_image = self.image.copy()
+        
+        # Flutuação
+        self.float_offset = 0
+        self.float_speed = 2
+        self.original_y = pos[1]
+    
+    def update(self, dt):
+        """Faz a banana flutuar e girar"""
+        # Rotação
+        self.rotation_angle += self.rotation_speed * dt
+        self.image = pygame.transform.rotate(self.original_image, self.rotation_angle)
+        old_center = self.rect.center
+        self.rect = self.image.get_rect()
+        self.rect.center = old_center
+        
+        # Flutuação
+        self.float_offset += self.float_speed * dt
+        self.rect.centery = self.original_y + int(8 * pygame.math.Vector2(0, 1).rotate(self.float_offset * 100).y)

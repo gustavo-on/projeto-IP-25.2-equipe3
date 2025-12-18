@@ -9,7 +9,7 @@ from sprite import Tile
 from collision import CollisionSprite, Bullet
 from aim import Crosshair
 from enemies import Enemy
-from coletaveis import XP, Coin
+from coletaveis import XP, Coin, Banana
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TILE_SIZE = 64
@@ -35,6 +35,7 @@ class Game:
         self.enemy_sprites = pygame.sprite.Group()
         self.collectible_sprites = pygame.sprite.Group()
         self.coin_sprites = pygame.sprite.Group()
+        self.banana_sprites = pygame.sprite.Group()
 
         self.spawn_positions = []
         self.score = 0
@@ -69,6 +70,11 @@ class Game:
         self.ui_font = pygame.font.Font(None, 30)
         self.game_over_font = pygame.font.Font(None, 80)
         self.hud_font = pygame.font.Font(None, 40)
+        
+        # Mensagens temporárias
+        self.temp_message = ""
+        self.temp_message_time = 0
+        self.temp_message_duration = 2000
 
         # Timers de spawn
         self.enemy_event = pygame.USEREVENT + 1
@@ -76,6 +82,9 @@ class Game:
         
         self.coin_event = pygame.USEREVENT + 2
         pygame.time.set_timer(self.coin_event, 3000)
+        
+        self.banana_event = pygame.USEREVENT + 3
+        pygame.time.set_timer(self.banana_event, 5000)  # Banana spawna a cada 5 segundos
     
     def load_images(self):
         self.bullet_surf = pygame.Surface((10, 10))
@@ -156,13 +165,59 @@ class Game:
         coin_value = randint(1, 5)
         Coin(pos=(x, y), value=coin_value, groups=(self.all_sprites, self.coin_sprites))
 
+    def spawn_banana(self):
+        """Spawna uma banana em posição aleatória"""
+        x = randint(100, self.map_width - 100)
+        y = randint(100, self.map_height - 100)
+        heal_amount = randint(2, 4)  # Cura entre 2-4 de vida
+        Banana(pos=(x, y), heal_amount=heal_amount, groups=(self.all_sprites, self.banana_sprites))
+
     def collect_coins(self):
         """Verifica e coleta moedas"""
         for coin in self.coin_sprites:
             if self.player.rect.colliderect(coin.rect):
                 self.score += coin.value
                 coin.kill()
-                print(f"💰 +{coin.value} moedas! Total: {self.score}")
+                self.show_temp_message(f" +{coin.value} moedas!", (255, 215, 0))
+                print(f"+{coin.value} moedas! Total: {self.score}")
+
+    def collect_bananas(self):
+        """Verifica e coleta bananas"""
+        for banana in self.banana_sprites:
+            if self.player.rect.colliderect(banana.rect):
+                # Cura o player (sem ultrapassar vida máxima)
+                heal_amount = banana.heal_amount
+                old_health = self.player.current_health
+                self.player.current_health = min(self.player.current_health + heal_amount, self.player.health)
+                actual_heal = self.player.current_health - old_health
+                
+                banana.kill()
+                
+                if actual_heal > 0:
+                    self.show_temp_message(f"🍌 +{actual_heal} HP!", (255, 255, 0))
+                    print(f"🍌 Banana coletada! +{actual_heal} HP ({self.player.current_health}/{self.player.health})")
+                else:
+                    self.show_temp_message("🍌 Vida cheia!", (255, 255, 255))
+                    print("🍌 Banana coletada, mas vida já está cheia!")
+
+    def show_temp_message(self, message, color=(255, 255, 255)):
+        """Mostra uma mensagem temporária na tela"""
+        self.temp_message = message
+        self.temp_message_color = color
+        self.temp_message_time = pygame.time.get_ticks()
+
+    def draw_temp_message(self):
+        """Desenha mensagem temporária se houver uma ativa"""
+        if self.temp_message and pygame.time.get_ticks() - self.temp_message_time < self.temp_message_duration:
+            msg_surf = self.hud_font.render(self.temp_message, True, self.temp_message_color)
+            msg_rect = msg_surf.get_rect(center=(self.window_width // 2, 100))
+            
+            # Sombra
+            shadow_surf = self.hud_font.render(self.temp_message, True, (0, 0, 0))
+            shadow_rect = shadow_surf.get_rect(center=(self.window_width // 2 + 2, 102))
+            self.display_surface.blit(shadow_surf, shadow_rect)
+            
+            self.display_surface.blit(msg_surf, msg_rect)
 
     def draw_hud(self):
         """Desenha HUD com informações do jogador"""
@@ -172,7 +227,7 @@ class Game:
         hud_bg.fill((0, 0, 0))
         self.display_surface.blit(hud_bg, (10, 10))
         
-        score_text = self.hud_font.render(f"💰 {self.score}", True, "gold")
+        score_text = self.hud_font.render(f"{self.score}", True, "gold")
         self.display_surface.blit(score_text, (20, 15))
         
         # XP e Level
@@ -187,14 +242,40 @@ class Game:
         xp_text = self.ui_font.render(f"XP: {self.player.current_xp}/{self.player.next_level_up}", True, "white")
         self.display_surface.blit(xp_text, (20, 100))
         
-        # Vida
-        health_bg = pygame.Surface((220, 40))
+        # Vida com barra visual
+        health_bg = pygame.Surface((220, 50))
         health_bg.set_alpha(150)
         health_bg.fill((0, 0, 0))
         self.display_surface.blit(health_bg, (10, 140))
         
-        health_text = self.ui_font.render(f"HP: {self.player.current_health}/{self.player.health}", True, "red")
-        self.display_surface.blit(health_text, (20, 145))
+        # Barra de vida
+        bar_width = 180
+        bar_height = 20
+        bar_x = 20
+        bar_y = 150
+        
+        # Fundo da barra (vermelho escuro)
+        pygame.draw.rect(self.display_surface, (100, 0, 0), (bar_x, bar_y, bar_width, bar_height))
+        
+        # Barra de vida atual (verde/amarelo/vermelho baseado na porcentagem)
+        health_percent = self.player.current_health / self.player.health
+        current_bar_width = int(bar_width * health_percent)
+        
+        if health_percent > 0.6:
+            bar_color = (0, 200, 0)  # Verde
+        elif health_percent > 0.3:
+            bar_color = (255, 200, 0)  # Amarelo
+        else:
+            bar_color = (255, 0, 0)  # Vermelho
+        
+        pygame.draw.rect(self.display_surface, bar_color, (bar_x, bar_y, current_bar_width, bar_height))
+        
+        # Borda da barra
+        pygame.draw.rect(self.display_surface, (255, 255, 255), (bar_x, bar_y, bar_width, bar_height), 2)
+        
+        # Texto da vida
+        health_text = self.ui_font.render(f"{self.player.current_health}/{self.player.health}", True, "white")
+        self.display_surface.blit(health_text, (bar_x + bar_width // 2 - health_text.get_width() // 2, bar_y - 2))
 
     def draw_attribute_menu(self):
         """Menu de atributos do jogador"""
@@ -307,7 +388,8 @@ class Game:
                                 self.player.next_level_up = 9999
                                 print("Nível Máximo Alcançado")
 
-                            self.player.damage += 1  # Aumenta dano ao subir de nível
+                            self.player.damage += 1
+                            self.show_temp_message(f"🎉 LEVEL {self.player.level}!", (0, 255, 255))
                             print(f"🎉 LEVEL UP! Level {self.player.level}! Dano +1")
                 except Exception as e:
                     print(f"Erro ao coletar XP: {e}")
@@ -319,10 +401,11 @@ class Game:
         self.bullet_sprites.empty()
         self.collectible_sprites.empty()
         self.coin_sprites.empty()
+        self.banana_sprites.empty()
         
         # Remove sprites
         for sprite in list(self.all_sprites):
-            if isinstance(sprite, (Enemy, Bullet, XP, Coin)):
+            if isinstance(sprite, (Enemy, Bullet, XP, Coin, Banana)):
                 sprite.kill()
         
         # Reseta player
@@ -338,7 +421,8 @@ class Game:
         self.player_invincible = False
         self.score = 0
         self.game_over = False
-        print("✅ Jogo resetado!")
+        self.temp_message = ""
+        print("Jogo resetado!")
 
     def run(self):
         """Loop principal do jogo"""
@@ -372,6 +456,10 @@ class Game:
                 # Spawn de moedas
                 if event.type == self.coin_event and not self.game_over:
                     self.spawn_coin()
+                
+                # Spawn de bananas
+                if event.type == self.banana_event and not self.game_over:
+                    self.spawn_banana()
 
             # Atualização
             if not self.game_over and not self.show_attributes:
@@ -385,6 +473,7 @@ class Game:
                 self.bullet_collision()
                 self.collect_items()
                 self.collect_coins()
+                self.collect_bananas()
                 
                 # Dano de inimigos
                 if not self.player_invincible:
@@ -403,7 +492,7 @@ class Game:
                             
                             if self.player.current_health <= 0:
                                 self.game_over = True
-                                print("💀 GAME OVER!")
+                                print("GAME OVER!")
                             
                             break
 
@@ -422,6 +511,7 @@ class Game:
             
             if not self.game_over:
                 self.draw_hud()
+                self.draw_temp_message()
 
             if self.show_attributes:
                 overlay = pygame.Surface((self.window_width, self.window_height))
