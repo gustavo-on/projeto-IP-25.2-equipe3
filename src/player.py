@@ -22,6 +22,8 @@ class Player(Entity):
         self.level = 1
         self.current_xp = 0
         self.next_level_up = 10
+
+        self.attributes_points = 0
         
         # Vetor de direção do movimento
         self.collision_sprites = collision_sprites

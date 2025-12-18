@@ -10,6 +10,7 @@ from collision import CollisionSprite, Bullet
 from aim import Crosshair
 from enemies import Enemy
 from coletaveis import XP, Coin, Banana
+from button import Button
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TILE_SIZE = 64
@@ -84,7 +85,12 @@ class Game:
         pygame.time.set_timer(self.coin_event, 3000)
         
         self.banana_event = pygame.USEREVENT + 3
-        pygame.time.set_timer(self.banana_event, 5000)  # Banana spawna a cada 5 segundos
+        pygame.time.set_timer(self.banana_event, 5000) 
+        
+        self.attribute_points = 0
+        self.upgrade_buttons = [] # Banana spawna a cada 5 segundos
+
+        pygame.mouse.set_visible(False)
     
     def load_images(self):
         self.bullet_surf = pygame.Surface((10, 10))
@@ -278,12 +284,12 @@ class Game:
         self.display_surface.blit(health_text, (bar_x + bar_width // 2 - health_text.get_width() // 2, bar_y - 2))
 
     def draw_attribute_menu(self):
-        """Menu de atributos do jogador"""
+        """Menu de atributos com sistema de pontos de skill"""
         bg_color = (40, 40, 40)
         border_color = "white"
         text_color = "white"
         padding = 20
-        width, height = 350, 250
+        width, height = 450, 420
         
         x = (self.window_width - width) // 2
         y = (self.window_height - height) // 2
@@ -296,20 +302,113 @@ class Game:
         title_rect = title_surf.get_rect(midtop=(menu_rect.centerx, menu_rect.top + padding))
         self.display_surface.blit(title_surf, title_rect)
 
-        y_offset = title_rect.bottom + 20
-        attributes = [
+        # Pontos disponíveis (destaque)
+        y_offset = title_rect.bottom + 15
+        points_color = (0, 255, 0) if self.attribute_points > 0 else (150, 150, 150)
+        points_surf = self.ui_font.render(f"Pontos Disponíveis: {self.attribute_points}", True, points_color)
+        points_rect = points_surf.get_rect(centerx=menu_rect.centerx, top=y_offset)
+        self.display_surface.blit(points_surf, points_rect)
+        
+        y_offset += 50
+        
+        # Limpa e recria botões
+        self.upgrade_buttons = []
+        button_font = pygame.font.Font(None, 26)
+        
+        # Configuração dos atributos
+        upgrades = [
+            {
+                'name': '1. Attack',
+                'current': self.player.damage,
+                'key': 'attack',
+                'color': (255, 100, 100),
+                'icon': '⚔️'
+            },
+            {
+                'name': '2. Health Max',
+                'current': self.player.health,
+                'key': 'health',
+                'color': (100, 255, 100),
+                'icon': '❤️'
+            },
+            {
+                'name': '3. Speed',
+                'current': int(self.player.speed),
+                'key': 'speed',
+                'color': (100, 150, 255),
+                'icon': '⚡'
+            }
+        ]
+        
+        for i, upgrade in enumerate(upgrades):
+            # Texto do atributo
+            attr_text = f"{upgrade['icon']} {upgrade['name']}: {upgrade['current']}"
+            attr_surf = self.ui_font.render(attr_text, True, upgrade['color'])
+            self.display_surface.blit(attr_surf, (menu_rect.left + padding, y_offset))
+            
+            # Botão de upgrade (só aparece se tiver pontos)
+            if self.attribute_points > 0:
+                button_x = menu_rect.right - 100
+                button_y = y_offset - 5
+                button = Button(
+                    button_x, button_y, 80, 35,
+                    f"+ UP",
+                    color=(0, 100, 0),
+                    hover_color=(0, 150, 0),
+                    text_color=(255, 255, 255)
+                )
+                
+                button.upgrade_key = upgrade['key']
+                self.upgrade_buttons.append(button)
+                
+                # Desenha o botão
+                mouse_pos = pygame.mouse.get_pos()
+                button.check_hover(mouse_pos)
+                button.draw(self.display_surface, button_font)
+            else:
+                # Texto indicativo
+                locked_text = button_font.render("---", True, (80, 80, 80))
+                self.display_surface.blit(locked_text, (menu_rect.right - 90, y_offset))
+            
+            y_offset += 60
+        
+        # Separador
+        pygame.draw.line(self.display_surface, (100, 100, 100), 
+                        (menu_rect.left + padding, y_offset), 
+                        (menu_rect.right - padding, y_offset), 2)
+        y_offset += 15
+        
+        # Informações adicionais
+        info_texts = [
             f"Level: {self.player.level}",
-            f"Attack: {self.player.damage}",
-            f"Health: {self.player.current_health}/{self.player.health}",
-            f"Range: {self.player.range_size}",
             f"XP: {self.player.current_xp}/{self.player.next_level_up}",
+            f"HP Atual: {self.player.current_health}/{self.player.health}",
             f"Moedas: {self.score}"
         ]
         
-        for attr in attributes:
-            surf = self.ui_font.render(attr, True, text_color)
+        info_font = pygame.font.Font(None, 26)
+        for text in info_texts:
+            surf = info_font.render(text, True, text_color)
             self.display_surface.blit(surf, (menu_rect.left + padding, y_offset))
-            y_offset += 30
+            y_offset += 28
+        
+        # Instruções
+        y_offset += 5
+        if self.attribute_points > 0:
+            inst_text = "Clique nos botões ou pressione 1, 2 ou 3"
+            inst_color = (255, 255, 100)
+        else:
+            inst_text = "Suba de nível para ganhar pontos!"
+            inst_color = (150, 150, 150)
+        
+        inst_surf = pygame.font.Font(None, 22).render(inst_text, True, inst_color)
+        inst_rect = inst_surf.get_rect(centerx=menu_rect.centerx, top=y_offset)
+        self.display_surface.blit(inst_surf, inst_rect)
+        
+        # Fechar menu
+        close_text = pygame.font.Font(None, 22).render("Pressione M para fechar", True, (200, 200, 200))
+        close_rect = close_text.get_rect(midbottom=(menu_rect.centerx, menu_rect.bottom - 10))
+        self.display_surface.blit(close_text, close_rect)
     
     def draw_game_over_screen(self):
         """Tela de Game Over"""
@@ -378,6 +477,7 @@ class Game:
                         if self.player.current_xp >= self.player.next_level_up:
                             self.player.level += 1
                             self.player.current_xp = 0
+
                             if self.player.level == 2:
                                 self.player.next_level_up = 20
                             elif self.player.level == 3:
@@ -388,15 +488,16 @@ class Game:
                                 self.player.next_level_up = 9999
                                 print("Nível Máximo Alcançado")
 
-                            self.player.damage += 1
-                            self.show_temp_message(f"🎉 LEVEL {self.player.level}!", (0, 255, 255))
-                            print(f"🎉 LEVEL UP! Level {self.player.level}! Dano +1")
+                            self.attribute_points += 1
+                            self.show_temp_message(f"🎉 LEVEL {self.player.level}! +1 Ponto", (0, 255, 255))
+                            print(f"🎉 LEVEL UP! Level {self.player.level}! Ganhou 1 ponto de atributo")
                 except Exception as e:
                     print(f"Erro ao coletar XP: {e}")
 
     def reset_game(self):
         """Reseta o jogo"""
         # Limpa grupos
+        self.attribute_points = 0
         self.enemy_sprites.empty()
         self.bullet_sprites.empty()
         self.collectible_sprites.empty()
@@ -423,6 +524,33 @@ class Game:
         self.game_over = False
         self.temp_message = ""
         print("Jogo resetado!")
+    
+    def apply_attribute_upgrade(self, upgrade_key):
+        """Aplica upgrade de atributo usando 1 ponto"""
+        if self.attribute_points <= 0:
+            self.show_temp_message("Sem pontos disponíveis!", (255, 100, 100))
+            return
+        
+        self.attribute_points -= 1
+        
+        if upgrade_key == 'attack':
+            self.player.damage += 1
+            self.show_temp_message("⚔️ Attack +1!", (255, 100, 100))
+            print(f"[UPGRADE] Attack aumentado para {self.player.damage}")
+            
+        elif upgrade_key == 'health':
+            self.player.health += 5
+            self.player.current_health += 5  # Também cura ao subir
+            self.show_temp_message("❤️ Health +5!", (100, 255, 100))
+            print(f"[UPGRADE] Health aumentado para {self.player.health}")
+            
+        elif upgrade_key == 'speed':
+            self.player.speed += 10
+            self.show_temp_message("⚡ Speed +10!", (100, 150, 255))
+            print(f"[UPGRADE] Speed aumentado para {self.player.speed}")
+        
+        print(f"Pontos restantes: {self.attribute_points}")
+
 
     def run(self):
         """Loop principal do jogo"""
@@ -441,6 +569,10 @@ class Game:
                 if not self.game_over and event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_m:
                         self.show_attributes = not self.show_attributes
+                        if self.show_attributes:
+                            pygame.mouse.set_visible(True)  # Mostra cursor no menu
+                        else:
+                            pygame.mouse.set_visible(False)
                 
                 # Spawn de inimigos
                 if event.type == self.enemy_event and not self.game_over:
@@ -452,6 +584,14 @@ class Game:
                             player=self.player,
                             collision_sprites=self.collision_sprites
                         )
+                
+                # Clique do mouse nos botões
+                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    if self.show_attributes and self.attribute_points > 0:
+                        mouse_pos = pygame.mouse.get_pos()
+                        for button in self.upgrade_buttons:
+                            if button.is_clicked(mouse_pos, True):
+                                self.apply_attribute_upgrade(button.upgrade_key)
                 
                 # Spawn de moedas
                 if event.type == self.coin_event and not self.game_over:
@@ -522,6 +662,23 @@ class Game:
             
             if self.game_over:
                 self.draw_game_over_screen()
+
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if self.show_attributes and self.attribute_points > 0:
+                    mouse_pos = pygame.mouse.get_pos()
+                    for button in self.upgrade_buttons:
+                        if button.is_clicked(mouse_pos, True):
+                            self.apply_attribute_upgrade(button.upgrade_key)
+
+            # Teclas 1, 2, 3 para upgrade rápido
+            if not self.game_over and event.type == pygame.KEYDOWN:
+                if self.show_attributes and self.attribute_points > 0:
+                    if event.key == pygame.K_1:
+                        self.apply_attribute_upgrade('attack')
+                    elif event.key == pygame.K_2:
+                        self.apply_attribute_upgrade('health')
+                    elif event.key == pygame.K_3:
+                        self.apply_attribute_upgrade('speed')
 
             pygame.display.flip()
         
