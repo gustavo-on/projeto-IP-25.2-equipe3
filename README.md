@@ -19,9 +19,9 @@ Projeto da disciplina de Introdução à Programação 2025.2 (CC/IA) - UFPE
   3.1 História:
     - Um Gorila, filósofo, que incentiva seus seguidores com a sua frase mais inspiradora "Apenas comece" que vem dá filosofia mais refinada, estava a viver a sua vida em paz. Entretanto, ele é capturado por um grupo de calouros do CIN para enfrentar um desafio: Derrotar os (CIN)homens enquanto percorre um trajeto tortuoso em busca de amadurecimento(XP), alimento(banana) e moedas, é claro!
 
-# Estrutura e Organização do código
+# 4. Estrutura e Organização do código
 
-# Capturas de tela:
+# 5. Capturas de tela:
 <img width="1917" height="985" alt="image" src="https://github.com/user-attachments/assets/116c2af5-202d-4c66-85ff-110391a16672" />
 
 <img width="1065" height="826" alt="image" src="https://github.com/user-attachments/assets/c47ca993-61c6-4122-9f20-801141994b8b" />
@@ -30,7 +30,7 @@ Projeto da disciplina de Introdução à Programação 2025.2 (CC/IA) - UFPE
 
 
 
-# Ferramentas, bibliotecas, frameworks:
+# 6. Ferramentas, bibliotecas, frameworks:
   -Ferramentas utilizadas:
   
     -Pygamece(Biblioteca usada para o desenvolvimento de jogos 2D na linguagem Python - (Linguagem utilizda durante a cadeira de Introdução à Programação 2025.2 (CC/IA) - UFPE)
@@ -55,7 +55,7 @@ Projeto da disciplina de Introdução à Programação 2025.2 (CC/IA) - UFPE
     
     -Youtube(Aprendizados diversos relacionados a outras ferramentas para a elaboração do projeto)
 
-# Como jogar:
+# 7. Como jogar:
 
   -Movimento: 
   
@@ -70,15 +70,19 @@ Projeto da disciplina de Introdução à Programação 2025.2 (CC/IA) - UFPE
   -Disparo:
 
     -Botão esquerdo do Mouse(Disparo de projéteis)
-  
-# Desafios, erros e aprendizados:
+    
+# 8. Os conceitos que foram apresentados durante a disciplina e utilizados no projeto (indicando onde foram usados):
+  -
+  -
+  -
+# 9. Desafios, erros e aprendizados:
   -Qual foi o maior erro cometido durante o projeto? Como vocês lidaram com ele?
-  
+    -
   -Qual foi o maior desafio enfrentado durante o projeto? Como vocês lidaram com ele?
   
     -Aprendizado de novas ferramentas e conceitos (OOP) em pouco tempo. A gestão do tempo em meio a diversos compromissos e tarefas associados ao projeto,e outros compromissos não relacionados ao projeto, foi ,de fato, desafiador.
 
   -Quais as lições aprendidas durante o projeto?
   
-    - O trabalho colaborativo, atrelado a uma comunicação dinâmica(por meio de aplicativos), foi essencial para a realização do projeto, a pesar das dificuldades encontradas com o tempo escasso. Atrelado a isso, o uso de ferramentas como o GIT e GitHub nos proporcionaram uma visão do trabalho colaborativo em um projeto de multiplas contribuições. A importância do trabalho em equipe ficou evidente na elaboração do projeto, com os membros se colocando a disposição para auxiiar uns aos outros durante as atividades e as demandas ou dificuldades que foram surgindo ao longo do projeto .
+    - O trabalho colaborativo, atrelado a uma comunicação dinâmica(por meio de aplicativos), foi essencial para a realização do projeto, a pesar das dificuldades encontradas com o tempo escasso. Atrelado a isso, o uso de ferramentas como o GIT e GitHub nos proporcionaram uma visão do trabalho colaborativo em um projeto de multiplas contribuições. A importância do trabalho em equipe ficou evidente na elaboração do projeto, com os membros se colocando a disposição para auxiiar, uns aos outros, durante as atividades e as demandas, ou dificuldades, que foram surgindo ao longo do projeto.
   
