@@ -59,13 +59,13 @@ Projeto da disciplina de Introdução à Programação 2025.2 (CC/IA) - UFPE
 
   -Movimento: 
   
-    -W(Move para cima)
+    -Tecla W(Move para cima)
     
-    -A(Move para a esquerda)
+    -Tecla A(Move para a esquerda)
     
-    -S(Move para baixo)
+    -tecla S(Move para baixo)
     
-    -D(Move para a Direita)
+    -Tecla D(Move para a Direita)
     
   -Disparo:
 
@@ -80,5 +80,5 @@ Projeto da disciplina de Introdução à Programação 2025.2 (CC/IA) - UFPE
 
   -Quais as lições aprendidas durante o projeto?
   
-    - O trabalho colaborativo, atrelado a uma comunicação dinâmica(por meio de aplicativos), foi essencial para a realização do projeto, a pesar das dificuldades encontradas com o tempo escasso. Atrelado a isso, o uso de ferramentas como o GIT e GitHub nos proporcionaram uma visão do trabalho colaborativo em um projeto de multiplas contribuições.
+    - O trabalho colaborativo, atrelado a uma comunicação dinâmica(por meio de aplicativos), foi essencial para a realização do projeto, a pesar das dificuldades encontradas com o tempo escasso. Atrelado a isso, o uso de ferramentas como o GIT e GitHub nos proporcionaram uma visão do trabalho colaborativo em um projeto de multiplas contribuições. A importância do trabalho em equipe ficou evidente na elaboração do projeto, com os membros se colocando a disposição para auxiiar uns aos outros durante as atividades e as demandas ou dificuldades que foram surgindo ao longo do projeto .
   
