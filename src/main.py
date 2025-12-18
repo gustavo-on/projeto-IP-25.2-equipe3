@@ -9,7 +9,7 @@ from sprite import Tile
 from collision import CollisionSprite, Bullet
 from aim import Crosshair
 from enemies import Enemy
-from coletaveis import XP, Coin, Banana
+from coletaveis import XP, Coin, Banana, Rock
 from button import Button
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -37,13 +37,17 @@ class Game:
         self.collectible_sprites = pygame.sprite.Group()
         self.coin_sprites = pygame.sprite.Group()
         self.banana_sprites = pygame.sprite.Group()
+        self.rock_sprites = pygame.sprite.Group()
 
         self.spawn_positions = []
         self.score = 0
         
         # INVENTÁRIO DE BANANAS
         self.banana_inventory = 0
-        self.banana_heal_amount = 3  # Cada banana cura 3 HP
+        self.banana_heal_amount = 3
+        
+        # INVENTÁRIO DE PEDRAS (MUNIÇÃO)
+        self.rock_inventory = 3
 
         # Cria o player
         self.player_size = 50
@@ -89,10 +93,13 @@ class Game:
         pygame.time.set_timer(self.coin_event, 3000)
         
         self.banana_event = pygame.USEREVENT + 3
-        pygame.time.set_timer(self.banana_event, 5000) 
+        pygame.time.set_timer(self.banana_event, 5000)
+        
+        self.rock_event = pygame.USEREVENT + 4
+        pygame.time.set_timer(self.rock_event, 4000)
         
         self.attribute_points = 0
-        self.upgrade_buttons = [] # Banana spawna a cada 5 segundos
+        self.upgrade_buttons = []
 
         pygame.mouse.set_visible(False)
 
@@ -105,29 +112,37 @@ class Game:
     
     def input(self):
         if pygame.mouse.get_pressed()[0] and self.can_shoot and not self.game_over:
-            mouse_pos = pygame.Vector2(pygame.mouse.get_pos())
-            player_pos = pygame.Vector2(self.player.rect.center)
-            player_screen_pos = player_pos + self.all_sprites.offset
-            direction = (mouse_pos - player_screen_pos).normalize()
+            if self.rock_inventory > 0:
+                mouse_pos = pygame.Vector2(pygame.mouse.get_pos())
+                player_pos = pygame.Vector2(self.player.rect.center)
+                player_screen_pos = player_pos + self.all_sprites.offset
+                direction = (mouse_pos - player_screen_pos).normalize()
 
-            Bullet(
-                surf=self.bullet_surf, 
-                pos=self.player.rect.center, 
-                direction=direction, 
-                groups=(self.all_sprites, self.bullet_sprites)
-            )
-            self.can_shoot = False
-            self.shoot_time = pygame.time.get_ticks()
+                Bullet(
+                    surf=self.bullet_surf, 
+                    pos=self.player.rect.center, 
+                    direction=direction, 
+                    groups=(self.all_sprites, self.bullet_sprites)
+                )
+                
+                self.rock_inventory -= 1
+                self.can_shoot = False
+                self.shoot_time = pygame.time.get_ticks()
+                
+                if self.rock_inventory == 0:
+                    self.show_temp_message("⚠️ Sem pedras!", (255, 150, 0))
+            else:
+                if not hasattr(self, '_last_no_rock_msg') or pygame.time.get_ticks() - self._last_no_rock_msg > 1000:
+                    self.show_temp_message("❌ Colete pedras para atirar!", (255, 100, 100))
+                    self._last_no_rock_msg = pygame.time.get_ticks()
     
     def use_banana(self):
         """Usa uma banana do inventário para curar"""
         if self.banana_inventory > 0 and self.player.current_health < self.player.health:
-            # Calcula quanto vai curar
             old_health = self.player.current_health
             self.player.current_health = min(self.player.current_health + self.banana_heal_amount, self.player.health)
             actual_heal = self.player.current_health - old_health
             
-            # Remove banana do inventário
             self.banana_inventory -= 1
             
             self.show_temp_message(f"🍌 Usou banana! +{actual_heal} HP", (255, 255, 0))
@@ -166,7 +181,10 @@ class Game:
             Tile((x * TILE_SIZE, y * TILE_SIZE), image, self.all_sprites)
         
         for obj in self.map.get_layer_by_name("Objects"):
-            CollisionSprite((obj.x, obj.y), obj.image, (self.all_sprites, self.collision_sprites))
+            if obj.image is not None:
+                CollisionSprite((obj.x, obj.y), obj.image, (self.all_sprites, self.collision_sprites))
+            else:
+                print(f"⚠️ Objeto sem imagem ignorado em ({obj.x}, {obj.y})")
         
         for obj in self.map.get_layer_by_name("Collisions"):
             CollisionSprite((obj.x, obj.y), pygame.Surface((obj.width, obj.height)), self.collision_sprites)
@@ -191,8 +209,8 @@ class Game:
            self.spawn_positions = [(100, 100), (1000, 100)]
 
         self.player_start_pos = self.player.rect.center
-        self.map_width = self.map.width * TILE_SIZE
-        self.map_height = self.map.height * TILE_SIZE
+        self.map_width = 130 * TILE_SIZE
+        self.map_height = 130 * TILE_SIZE
 
     def spawn_coin(self):
         """Spawna uma moeda em posição aleatória"""
@@ -205,8 +223,14 @@ class Game:
         """Spawna uma banana em posição aleatória"""
         x = randint(100, self.map_width - 100)
         y = randint(100, self.map_height - 100)
-        heal_amount = self.banana_heal_amount  # Valor fixo para consistência
+        heal_amount = self.banana_heal_amount
         Banana(pos=(x, y), heal_amount=heal_amount, groups=(self.all_sprites, self.banana_sprites))
+
+    def spawn_rock(self):
+        """Spawna uma pedra em posição aleatória"""
+        x = randint(100, self.map_width - 100)
+        y = randint(100, self.map_height - 100)
+        Rock(pos=(x, y), groups=(self.all_sprites, self.rock_sprites))
 
     def collect_coins(self):
         """Verifica e coleta moedas"""
@@ -221,12 +245,21 @@ class Game:
         """Verifica e coleta bananas para o inventário"""
         for banana in self.banana_sprites:
             if self.player.rect.colliderect(banana.rect):
-                # Adiciona banana ao inventário
                 self.banana_inventory += 1
                 banana.kill()
                 
                 self.show_temp_message(f"🍌 Banana coletada! ({self.banana_inventory})", (255, 255, 0))
                 print(f"🍌 Banana coletada! Inventário: {self.banana_inventory}")
+
+    def collect_rocks(self):
+        """Verifica e coleta pedras"""
+        for rock in self.rock_sprites:
+            if self.player.rect.colliderect(rock.rect):
+                self.rock_inventory += 1
+                rock.kill()
+                
+                self.show_temp_message(f"🪨 Pedra coletada! ({self.rock_inventory})", (150, 150, 150))
+                print(f"🪨 Pedra coletada! Inventário: {self.rock_inventory}")
 
     def show_temp_message(self, message, color=(255, 255, 255)):
         """Mostra uma mensagem temporária na tela"""
@@ -290,11 +323,11 @@ class Game:
         current_bar_width = int(bar_width * health_percent)
         
         if health_percent > 0.6:
-            bar_color = (0, 200, 0)  # Verde
+            bar_color = (0, 200, 0)
         elif health_percent > 0.3:
-            bar_color = (255, 200, 0)  # Amarelo
+            bar_color = (255, 200, 0)
         else:
-            bar_color = (255, 0, 0)  # Vermelho
+            bar_color = (255, 0, 0)
         
         pygame.draw.rect(self.display_surface, bar_color, (bar_x, bar_y, current_bar_width, bar_height))
         
@@ -317,6 +350,18 @@ class Game:
         # Dica de uso
         hint_text = self.ui_font.render("(H para usar)", True, (200, 200, 200))
         self.display_surface.blit(hint_text, (120, 212))
+        
+        # INVENTÁRIO DE PEDRAS
+        rock_bg = pygame.Surface((220, 50))
+        rock_bg.set_alpha(150)
+        rock_bg.fill((0, 0, 0))
+        self.display_surface.blit(rock_bg, (10, 260))
+        
+        rock_text = self.hud_font.render(f"🪨 x{self.rock_inventory}", True, (150, 150, 150))
+        self.display_surface.blit(rock_text, (20, 265))
+        
+        rock_hint = self.ui_font.render("(Munição)", True, (200, 200, 200))
+        self.display_surface.blit(rock_hint, (120, 272))
 
     def draw_attribute_menu(self):
         """Menu de atributos com sistema de pontos de skill"""
@@ -324,7 +369,7 @@ class Game:
         border_color = "white"
         text_color = "white"
         padding = 20
-        width, height = 450, 420
+        width, height = 450, 450
         
         x = (self.window_width - width) // 2
         y = (self.window_height - height) // 2
@@ -337,7 +382,7 @@ class Game:
         title_rect = title_surf.get_rect(midtop=(menu_rect.centerx, menu_rect.top + padding))
         self.display_surface.blit(title_surf, title_rect)
 
-        # Pontos disponíveis (destaque)
+        # Pontos disponíveis
         y_offset = title_rect.bottom + 15
         points_color = (0, 255, 0) if self.attribute_points > 0 else (150, 150, 150)
         points_surf = self.ui_font.render(f"Pontos Disponíveis: {self.attribute_points}", True, points_color)
@@ -381,7 +426,7 @@ class Game:
             attr_surf = self.ui_font.render(attr_text, True, upgrade['color'])
             self.display_surface.blit(attr_surf, (menu_rect.left + padding, y_offset))
             
-            # Botão de upgrade (só aparece se tiver pontos)
+            # Botão de upgrade
             if self.attribute_points > 0:
                 button_x = menu_rect.right - 100
                 button_y = y_offset - 5
@@ -401,7 +446,6 @@ class Game:
                 button.check_hover(mouse_pos)
                 button.draw(self.display_surface, button_font)
             else:
-                # Texto indicativo
                 locked_text = button_font.render("---", True, (80, 80, 80))
                 self.display_surface.blit(locked_text, (menu_rect.right - 90, y_offset))
             
@@ -418,7 +462,8 @@ class Game:
             f"Level: {self.player.level}",
             f"XP: {self.player.current_xp}/{self.player.next_level_up}",
             f"Moedas: {self.score}",
-            f"Bananas: {self.banana_inventory}"
+            f"Bananas: {self.banana_inventory}",
+            f"Pedras: {self.rock_inventory}"
         ]
         
         info_font = pygame.font.Font(None, 26)
@@ -538,10 +583,11 @@ class Game:
         self.collectible_sprites.empty()
         self.coin_sprites.empty()
         self.banana_sprites.empty()
+        self.rock_sprites.empty()
         
         # Remove sprites
         for sprite in list(self.all_sprites):
-            if isinstance(sprite, (Enemy, Bullet, XP, Coin, Banana)):
+            if isinstance(sprite, (Enemy, Bullet, XP, Coin, Banana, Rock)):
                 sprite.kill()
         
         # Reseta player
@@ -551,15 +597,17 @@ class Game:
         self.player.level = 1
         self.player.next_level_up = 10
         self.player.damage = 2
+        self.player.speed = 500
         self.player.rect.center = self.player_start_pos
         
         # Reseta estado
         self.player_invincible = False
         self.score = 0
         self.banana_inventory = 0
+        self.rock_inventory = 3
         self.game_over = False
         self.temp_message = ""
-        print("Jogo resetado!")
+        print("✅ Jogo resetado!")
     
     def apply_attribute_upgrade(self, upgrade_key):
         """Aplica upgrade de atributo usando 1 ponto"""
@@ -576,7 +624,7 @@ class Game:
             
         elif upgrade_key == 'health':
             self.player.health += 5
-            self.player.current_health += 5  # Também cura ao subir
+            self.player.current_health += 5
             self.show_temp_message("❤️ Health +5!", (100, 255, 100))
             print(f"[UPGRADE] Health aumentado para {self.player.health}")
             
@@ -586,7 +634,6 @@ class Game:
             print(f"[UPGRADE] Speed aumentado para {self.player.speed}")
         
         print(f"Pontos restantes: {self.attribute_points}")
-
 
     def run(self):
         """Loop principal do jogo"""
@@ -660,6 +707,9 @@ class Game:
 
                     if event.type == self.banana_event and not self.game_over:
                         self.spawn_banana()
+                    
+                    if event.type == self.rock_event and not self.game_over:
+                        self.spawn_rock()
 
             # ========= ATUALIZAÇÃO / DESENHO =========
 
@@ -684,6 +734,7 @@ class Game:
                     self.collect_items()
                     self.collect_coins()
                     self.collect_bananas()
+                    self.collect_rocks()
 
                     # Dano dos inimigos
                     if not self.player_invincible:

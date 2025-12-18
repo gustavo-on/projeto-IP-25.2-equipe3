@@ -4,6 +4,9 @@ from random import uniform
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+
+
+
 class XP(pygame.sprite.Sprite):
     """Orb de XP que dropa quando um inimigo morre"""
     def __init__(self, pos, xp_value, groups, player):
@@ -159,4 +162,35 @@ class Banana(pygame.sprite.Sprite):
         
         # Flutuação
         self.float_offset += self.float_speed * dt
-        self.rect.centery = self.original_y + int(8 * pygame.math.Vector2(0, 1).rotate(self.float_offset * 100).y)
+        self.rect.centery = self.original_y + int(8 * pygame.math.Vector2(0, 1).rotate(self.float_offset * 100).y)   
+
+class Rock(pygame.sprite.Sprite):
+    """Pedra coletável que serve como munição"""
+    def __init__(self, pos, groups):
+        super().__init__(groups)
+        
+        # Tenta carregar a imagem da pedra
+        try:
+            rock_path = os.path.join(BASE_DIR, "..", "assets", "images", "pedra.png")
+            original_image = pygame.image.load(rock_path).convert_alpha()
+            self.image = pygame.transform.scale(original_image, (28, 28))
+        except:
+            # Fallback: desenha uma pedra cinza
+            print("⚠️ Imagem pedra.png não encontrada, usando círculo cinza")
+            self.image = pygame.Surface((24, 24), pygame.SRCALPHA)
+            pygame.draw.circle(self.image, (120, 120, 120), (12, 12), 12)
+            pygame.draw.circle(self.image, (80, 80, 80), (12, 12), 12, 3)
+            pygame.draw.circle(self.image, (160, 160, 160), (12, 12), 6)
+        
+        self.rect = self.image.get_rect(center=pos)
+        
+        # Animação de flutuação
+        self.float_offset = 0
+        self.float_speed = 2.5
+        self.original_y = pos[1]
+    
+    def update(self, dt):
+        """Faz a pedra flutuar"""
+        self.float_offset += self.float_speed * dt
+        self.rect.centery = self.original_y + int(6 * pygame.math.Vector2(0, 1).rotate(self.float_offset * 100).y)
+       
