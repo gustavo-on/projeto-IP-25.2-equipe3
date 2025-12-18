@@ -270,7 +270,7 @@ class Game:
                     bullet.kill()
                     break
     
-    def drop_xp(self, position, xp_amount=5):
+    def drop_xp(self, position, xp_amount=1):
         """Dropa XP na posição especificada"""
         XP(
             pos=position,
@@ -289,16 +289,26 @@ class Game:
             if isinstance(item, XP):
                 try:
                     xp_gained = item.collect()
-                    self.player.current_xp += xp_gained
-                    print(f"✨ +{xp_gained} XP! ({self.player.current_xp}/{self.player.next_level_up})")
+                    if self.player.level < 5:
+                        self.player.current_xp += xp_gained
+                        print(f"✨ +{xp_gained} XP! ({self.player.current_xp}/{self.player.next_level_up})")
                     
                     # Level up
-                    if self.player.current_xp >= self.player.next_level_up:
-                        self.player.level += 1
-                        self.player.current_xp = 0
-                        self.player.next_level_up = int(self.player.next_level_up * 1.5)
-                        self.player.damage += 1  # Aumenta dano ao subir de nível
-                        print(f"🎉 LEVEL UP! Level {self.player.level}! Dano +1")
+                        if self.player.current_xp >= self.player.next_level_up:
+                            self.player.level += 1
+                            self.player.current_xp = 0
+                            if self.player.level == 2:
+                                self.player.next_level_up = 20
+                            elif self.player.level == 3:
+                                self.player.next_level_up = 30
+                            elif self.player.level == 4:
+                                self.player.next_level_up = 40
+                            elif self.player.level >= 5:
+                                self.player.next_level_up = 9999
+                                print("Nível Máximo Alcançado")
+
+                            self.player.damage += 1  # Aumenta dano ao subir de nível
+                            print(f"🎉 LEVEL UP! Level {self.player.level}! Dano +1")
                 except Exception as e:
                     print(f"Erro ao coletar XP: {e}")
 
