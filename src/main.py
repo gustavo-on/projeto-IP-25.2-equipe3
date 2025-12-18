@@ -4,7 +4,7 @@ import os
 from random import randint, choice
 from pytmx.util_pygame import load_pygame
 from player import Player
-from allsprites import CameraGroups
+from allsprites import CameraGroups, TelaInicial
 from sprite import Tile
 from collision import CollisionSprite, Bullet
 from aim import Crosshair
@@ -95,6 +95,9 @@ class Game:
         self.upgrade_buttons = [] # Banana spawna a cada 5 segundos
 
         pygame.mouse.set_visible(False)
+
+        self.game_state = "menu"
+        self.menu = TelaInicial(self.display_surface, self.window_width, self.window_height)
     
     def load_images(self):
         self.bullet_surf = pygame.Surface((10, 10))
@@ -589,136 +592,147 @@ class Game:
         """Loop principal do jogo"""
         while self.running:
             dt = self.clock.tick(60) / 1000
-            
-            # Eventos
+
+            # ========= EVENTOS =========
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.running = False
-                
+
+                # ----- MENU -----
+                if self.game_state == "menu":
+                    result = self.menu.handle_events(event)
+                    if result == "start_game":
+                        self.game_state = "playing"
+                        pygame.mouse.set_visible(False)
+                        print("Jogo iniciado!")
+                    elif result == "quit":
+                        self.running = False
+
+                # ----- JOGANDO -----
+                elif self.game_state == "playing":
+
+                    # Reiniciar no game over
+                    if self.game_over:
+                        if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
+                            self.reset_game()
+
+                    # Teclas
+                    if not self.game_over and event.type == pygame.KEYDOWN:
+                        # Abrir/fechar menu de atributos
+                        if event.key == pygame.K_m:
+                            self.show_attributes = not self.show_attributes
+                            pygame.mouse.set_visible(self.show_attributes)
+
+                        # Usar banana
+                        if event.key == pygame.K_h:
+                            self.use_banana()
+
+                        # Upgrades 1, 2, 3
+                        if self.show_attributes and self.attribute_points > 0:
+                            if event.key == pygame.K_1:
+                                self.apply_attribute_upgrade('attack')
+                            elif event.key == pygame.K_2:
+                                self.apply_attribute_upgrade('health')
+                            elif event.key == pygame.K_3:
+                                self.apply_attribute_upgrade('speed')
+
+                    # Clique nos botões do menu de atributos
+                    if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                        if self.show_attributes and self.attribute_points > 0:
+                            mouse_pos = pygame.mouse.get_pos()
+                            for button in self.upgrade_buttons:
+                                if button.is_clicked(mouse_pos, True):
+                                    self.apply_attribute_upgrade(button.upgrade_key)
+
+                    # Spawns
+                    if event.type == self.enemy_event and not self.game_over:
+                        if self.spawn_positions:
+                            Enemy(
+                                pos=choice(self.spawn_positions),
+                                frames=None,
+                                groups=(self.all_sprites, self.enemy_sprites),
+                                player=self.player,
+                                collision_sprites=self.collision_sprites
+                            )
+
+                    if event.type == self.coin_event and not self.game_over:
+                        self.spawn_coin()
+
+                    if event.type == self.banana_event and not self.game_over:
+                        self.spawn_banana()
+
+            # ========= ATUALIZAÇÃO / DESENHO =========
+
+            # ----- MENU -----
+            if self.game_state == "menu":
+                self.menu.update()
+                self.menu.draw()
+
+            # ----- JOGANDO -----
+            elif self.game_state == "playing":
+
+                # Atualização da lógica
+                if not self.game_over and not self.show_attributes:
+                    self.gun_timer()
+                    self.invincibility_timer()
+                    self.input()
+                    if self.mira:
+                        self.mira.update()
+
+                    self.all_sprites.update(dt)
+                    self.bullet_collision()
+                    self.collect_items()
+                    self.collect_coins()
+                    self.collect_bananas()
+
+                    # Dano dos inimigos
+                    if not self.player_invincible:
+                        for enemy in self.enemy_sprites:
+                            if self.player.rect.colliderect(enemy.rect):
+                                damage = getattr(enemy, 'damage', 1)
+                                self.player.current_health -= damage
+
+                                self.player_invincible = True
+                                self.last_damage_time = pygame.time.get_ticks()
+
+                                vec = pygame.Vector2(self.player.rect.center) - pygame.Vector2(enemy.rect.center)
+                                if vec.length() > 0:
+                                    self.player.rect.center += vec.normalize() * 10
+
+                                if self.player.current_health <= 0:
+                                    self.game_over = True
+                                    print("💀 GAME OVER!")
+                                break
+
+                # Renderização
+                self.display_surface.fill("black")
+                self.all_sprites.draw(self.player.rect.center)
+
+                # Player piscando quando invencível
+                if self.player.current_health > 0:
+                    if not self.player_invincible or (pygame.time.get_ticks() // 100) % 2:
+                        player_screen_pos = self.player.rect.topleft + self.all_sprites.offset
+                        self.display_surface.blit(self.player.image, player_screen_pos)
+
+                if self.mira and not self.game_over:
+                    self.mira.draw(self.display_surface)
+
+                if not self.game_over:
+                    self.draw_hud()
+                    self.draw_temp_message()
+
+                if self.show_attributes:
+                    overlay = pygame.Surface((self.window_width, self.window_height))
+                    overlay.set_alpha(128)
+                    overlay.fill((0, 0, 0))
+                    self.display_surface.blit(overlay, (0, 0))
+                    self.draw_attribute_menu()
+
                 if self.game_over:
-                    if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
-                        self.reset_game()
-                
-                if not self.game_over and event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_m:
-                        self.show_attributes = not self.show_attributes
-                        if self.show_attributes:
-                            pygame.mouse.set_visible(True)  # Mostra cursor no menu
-                        else:
-                            pygame.mouse.set_visible(False)
-                    
-                    # USAR BANANA COM TECLA H
-                    if event.key == pygame.K_h:
-                        self.use_banana()
-                
-                # Spawn de inimigos
-                if event.type == self.enemy_event and not self.game_over:
-                    if self.spawn_positions:
-                        Enemy(
-                            pos=choice(self.spawn_positions), 
-                            frames=None, 
-                            groups=(self.all_sprites, self.enemy_sprites), 
-                            player=self.player,
-                            collision_sprites=self.collision_sprites
-                        )
-                
-                # Clique do mouse nos botões
-                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                    if self.show_attributes and self.attribute_points > 0:
-                        mouse_pos = pygame.mouse.get_pos()
-                        for button in self.upgrade_buttons:
-                            if button.is_clicked(mouse_pos, True):
-                                self.apply_attribute_upgrade(button.upgrade_key)
-                
-                # Spawn de moedas
-                if event.type == self.coin_event and not self.game_over:
-                    self.spawn_coin()
-                
-                # Spawn de bananas
-                if event.type == self.banana_event and not self.game_over:
-                    self.spawn_banana()
-
-            # Atualização
-            if not self.game_over and not self.show_attributes:
-                self.gun_timer()
-                self.invincibility_timer()
-                self.input()
-                if self.mira:
-                    self.mira.update()
-                
-                self.all_sprites.update(dt)
-                self.bullet_collision()
-                self.collect_items()
-                self.collect_coins()
-                self.collect_bananas()
-                
-                # Dano de inimigos
-                if not self.player_invincible:
-                    for enemy in self.enemy_sprites:
-                        if self.player.rect.colliderect(enemy.rect):
-                            damage = getattr(enemy, 'damage', 1)
-                            self.player.current_health -= damage
-                            
-                            self.player_invincible = True
-                            self.last_damage_time = pygame.time.get_ticks()
-                            
-                            # Knockback
-                            vec = pygame.Vector2(self.player.rect.center) - pygame.Vector2(enemy.rect.center)
-                            if vec.length() > 0:
-                                self.player.rect.center += vec.normalize() * 10
-                            
-                            if self.player.current_health <= 0:
-                                self.game_over = True
-                                print("💀 GAME OVER!")
-                            
-                            break
-
-            # Renderização
-            self.display_surface.fill("black")
-            self.all_sprites.draw(self.player.rect.center)
-            
-            # Desenha player com efeito de piscar quando invencível
-            if self.player.current_health > 0:
-                if not self.player_invincible or (pygame.time.get_ticks() // 100) % 2:
-                    player_screen_pos = self.player.rect.topleft + self.all_sprites.offset
-                    self.display_surface.blit(self.player.image, player_screen_pos)
-            
-            if self.mira and not self.game_over:
-                self.mira.draw(self.display_surface)
-            
-            if not self.game_over:
-                self.draw_hud()
-                self.draw_temp_message()
-
-            if self.show_attributes:
-                overlay = pygame.Surface((self.window_width, self.window_height))
-                overlay.set_alpha(128)
-                overlay.fill((0, 0, 0))
-                self.display_surface.blit(overlay, (0, 0))
-                self.draw_attribute_menu()
-            
-            if self.game_over:
-                self.draw_game_over_screen()
-
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                if self.show_attributes and self.attribute_points > 0:
-                    mouse_pos = pygame.mouse.get_pos()
-                    for button in self.upgrade_buttons:
-                        if button.is_clicked(mouse_pos, True):
-                            self.apply_attribute_upgrade(button.upgrade_key)
-
-            # Teclas 1, 2, 3 para upgrade rápido
-            if not self.game_over and event.type == pygame.KEYDOWN:
-                if self.show_attributes and self.attribute_points > 0:
-                    if event.key == pygame.K_1:
-                        self.apply_attribute_upgrade('attack')
-                    elif event.key == pygame.K_2:
-                        self.apply_attribute_upgrade('health')
-                    elif event.key == pygame.K_3:
-                        self.apply_attribute_upgrade('speed')
+                    self.draw_game_over_screen()
 
             pygame.display.flip()
-        
+
         pygame.quit()
 
 if __name__ == "__main__":
