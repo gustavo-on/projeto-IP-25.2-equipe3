@@ -130,7 +130,7 @@ class Banana(pygame.sprite.Sprite):
             banana_path = os.path.join(BASE_DIR, "..", "assets", "images", "banana.png")
             original_image = pygame.image.load(banana_path).convert_alpha()
             # Redimensiona para um tamanho adequado
-            self.image = pygame.transform.scale(original_image, (32, 32))
+            self.image = pygame.transform.scale(original_image, (62, 62))
         except:
             # Fallback: desenha uma banana se a imagem não for encontrada
             print("⚠️ Imagem banana.png não encontrada, usando retângulo amarelo")
