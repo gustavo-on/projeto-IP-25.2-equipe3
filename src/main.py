@@ -35,13 +35,15 @@ class Game:
         self.clock = pygame.time.Clock()
         self.running = True
         
-        # Grupos de sprites: all_sprites para renderização, collision_sprites para física
+        # ### NOVO: Variável de estado do jogo
+        self.game_over = False
+        
+        # Grupos de sprites
         self.all_sprites = CameraGroups()
         self.collision_sprites = pygame.sprite.Group()
         self.bullet_sprites = pygame.sprite.Group()
         self.enemy_sprites = pygame.sprite.Group()
 
-        # ✅ CORREÇÃO 1: Inicializa spawn_positions
         self.spawn_positions = []
 
         # Cria o player
@@ -66,17 +68,19 @@ class Game:
 
         self.show_attributes = False
         self.ui_font = pygame.font.Font(None, 30)
+        self.game_over_font = pygame.font.Font(None, 80)
 
-        # ✅ CORREÇÃO 2: Cria evento de spawn de inimigos
+        # Timer de spawn
         self.enemy_event = pygame.USEREVENT + 1
-        pygame.time.set_timer(self.enemy_event, 2000)  # Spawn a cada 2 segundos
+        pygame.time.set_timer(self.enemy_event, 2000)
     
     def load_images(self):
         self.bullet_surf = pygame.Surface((10, 10))
         self.bullet_surf.fill("red")
     
     def input(self):
-        if pygame.mouse.get_pressed()[0] and self.can_shoot:
+        # ### SÓ ATIRA SE NÃO FOR GAME OVER
+        if pygame.mouse.get_pressed()[0] and self.can_shoot and not self.game_over:
             mouse_pos = pygame.Vector2(pygame.mouse.get_pos())
             player_pos = pygame.Vector2(self.player.rect.center)
             player_screen_pos = player_pos + self.all_sprites.offset
@@ -94,81 +98,68 @@ class Game:
                 self.can_shoot = True
 
     def setup(self):
-        # Carrega o mapa TMX e cria todos os sprites do mundo
         map_path = os.path.join(BASE_DIR, "..", "data", "maps", "world.tmx")
         
         if not os.path.exists(map_path):
             print(f"ERRO: Mapa não encontrado em {map_path}")
             return
-        # Carrega o arquivo TMX usando pytmx
+        
         self.map = load_pygame(map_path)
         
-        # Carrega a camada "Ground" (chão) tiles não colidíveis
+        # Tiles chão
         for x, y, image in self.map.get_layer_by_name("Ground").tiles():
             Tile((x * TILE_SIZE, y * TILE_SIZE), image, self.all_sprites)
         
-        # Carrega a camada "Objects" (objetos visíveis) com colisão
+        # Objetos
         for obj in self.map.get_layer_by_name("Objects"):
             CollisionSprite((obj.x, obj.y), obj.image, (self.all_sprites, self.collision_sprites))
         
-        # Carrega a camada "Collisions" apenas hitboxes
+        # Colisões invisíveis
         for obj in self.map.get_layer_by_name("Collisions"):
             CollisionSprite((obj.x, obj.y), pygame.Surface((obj.width, obj.height)), self.collision_sprites)
         
-        # Carrega entidades (player spawn e enemy spawns)
+        # Entidades
         player_spawned = False
-        for obj in self.map.get_layer_by_name("Entities"):
-            if obj.name == "PLayer":  # Nota: typo no nome da camada
-                self.player.rect.x = obj.x
-                self.player.rect.y = obj.y
-                player_spawned = True
-                print(f"Player spawned at ({obj.x}, {obj.y})")
-            else:
-                self.spawn_positions.append((obj.x, obj.y))
-        
-        # Se o player não foi posicionado, coloca no centro do mapa
+        try:
+            # Tente verificar se o nome da layer no Tiled é "Entities" ou "PLayer"
+            for obj in self.map.get_layer_by_name("Entities"):
+                if obj.name == "PLayer" or obj.name == "Player":
+                    self.player.rect.x = obj.x
+                    self.player.rect.y = obj.y
+                    player_spawned = True
+                else:
+                    self.spawn_positions.append((obj.x, obj.y))
+        except Exception as e:
+            print(f"Erro ao carregar layer Entities: {e}")
+
         if not player_spawned:
-            map_width = self.map.width * TILE_SIZE
-            map_height = self.map.height * TILE_SIZE
-            self.player.rect.x = map_width // 2
-            self.player.rect.y = map_height // 2
-            print(f"Player spawned at center: ({self.player.rect.x}, {self.player.rect.y})")
+            self.player.rect.center = (600, 400)
         
-        # Define posições de spawn padrão se não houver no mapa
         if not self.spawn_positions:
-            map_width = self.map.width * TILE_SIZE
-            map_height = self.map.height * TILE_SIZE
-            self.spawn_positions = [
-                (100, 100),
-                (map_width - 100, 100),
-                (100, map_height - 100),
-                (map_width - 100, map_height - 100)
-            ]
+           self.spawn_positions = [(100, 100), (1000, 100)]
+
+        # ### IMPORTANTE: Salva onde o player começou para usar no reset
+        self.player_start_pos = self.player.rect.center
 
     def draw_attribute_menu(self):
-        # 1. Configurações da Janela
         bg_color = (40, 40, 40)
         border_color = "white"
         text_color = "white"
         padding = 20
         width, height = 300, 200
         
-        # Centraliza a janela
         x = (self.window_width - width) // 2
         y = (self.window_height - height) // 2
         menu_rect = pygame.Rect(x, y, width, height)
 
-        # 2. Desenha fundo e borda
         pygame.draw.rect(self.display_surface, bg_color, menu_rect)
         pygame.draw.rect(self.display_surface, border_color, menu_rect, 3)
 
-        # 3. Textos
         title_surf = self.ui_font.render("Atributos", True, "yellow")
         attack_surf = self.ui_font.render(f"Attack: {self.player.damage}", True, text_color)
-        health_surf = self.ui_font.render(f"Max Health: {self.player.health}", True, text_color)
+        health_surf = self.ui_font.render(f"Health: {self.player.current_health}/{self.player.health}", True, text_color)
         range_surf = self.ui_font.render(f"Range: {self.player.range_size}", True, text_color)
 
-        # 4. Posiciona e desenha
         title_rect = title_surf.get_rect(midtop=(menu_rect.centerx, menu_rect.top + padding))
         self.display_surface.blit(title_surf, title_rect)
 
@@ -176,41 +167,74 @@ class Game:
         self.display_surface.blit(health_surf, (menu_rect.left + padding, title_rect.bottom + 50))
         self.display_surface.blit(range_surf, (menu_rect.left + padding, title_rect.bottom + 80))
     
+    def draw_game_over_screen(self):
+        # Fundo escuro transparente
+        overlay = pygame.Surface((self.window_width, self.window_height))
+        overlay.set_alpha(200)
+        overlay.fill((0, 0, 0))
+        self.display_surface.blit(overlay, (0, 0))
+
+        # Texto GAME OVER
+        game_over_surf = self.game_over_font.render("GAME OVER", True, "red")
+        game_over_rect = game_over_surf.get_rect(center=(self.window_width/2, self.window_height/2 - 50))
+        self.display_surface.blit(game_over_surf, game_over_rect)
+
+        # Texto reiniciar
+        restart_surf = self.ui_font.render("Pressione R para reiniciar", True, "white")
+        restart_rect = restart_surf.get_rect(center=(self.window_width/2, self.window_height/2 + 20))
+        self.display_surface.blit(restart_surf, restart_rect)
+    
     def bullet_collision(self):
-        # Verifica colisão entre balas e inimigos usando sprite groups
         hits = pygame.sprite.groupcollide(self.bullet_sprites, self.enemy_sprites, True, False)
         for bullet, enemies_hit in hits.items():
             for enemy in enemies_hit:
                 enemy.health -= self.player.damage
                 if enemy.health <= 0:
-                    enemy.kill()
+                    enemy.die() # Chama o die() do inimigo que dropa XP
                     
-        
-        # Verifica colisão com paredes
         for bullet in self.bullet_sprites:
             for sprite in self.collision_sprites:
                 if bullet.rect.colliderect(sprite.rect):
                     bullet.kill()
                     break
 
+    def reset_game(self):
+        # Limpa grupos
+        self.enemy_sprites.empty()
+        self.bullet_sprites.empty()
+        
+        # Limpa sprites da tela (Inimigos e balas)
+        for sprite in self.all_sprites:
+            if isinstance(sprite, (Enemy, Bullet)):
+                sprite.kill()
+        
+        # Reseta Player
+        self.player.health = 10
+        self.player.current_health = 10
+        self.player.rect.center = self.player_start_pos
+
+        self.game_over = False
+
     def run(self):
-        # ✅ CORREÇÃO 3: Loop principal organizado
         while self.running:
-            # Calcula delta time
             dt = self.clock.tick(60) / 1000
             
-            # Processa eventos
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.running = False
                 
-                # Toggle menu de atributos
-                if event.type == pygame.KEYDOWN:
+                # ### CHECK DE RESET (R)
+                if self.game_over:
+                    if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
+                        self.reset_game()
+                
+                # Menu de atributos
+                if not self.game_over and event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_m:
                         self.show_attributes = not self.show_attributes
                 
-                # Spawn de inimigos
-                if event.type == self.enemy_event:
+                # Spawn de inimigos (SÓ SE NÃO FOR GAME OVER)
+                if event.type == self.enemy_event and not self.game_over:
                     if self.spawn_positions:
                         Enemy(
                             pos=choice(self.spawn_positions), 
@@ -220,56 +244,63 @@ class Game:
                             collision_sprites=self.collision_sprites
                         )
 
-            # Atualização apenas se não estiver no menu
-            if not self.show_attributes:
-                self.gun_timer()
-                self.input()
-                if self.mira:
-                    self.mira.update()
-                
-                # Atualiza todos os sprites
-                self.all_sprites.update(dt)
-                
-                # Verifica colisões
-                self.bullet_collision()
-                
-                # Dano de inimigos no player
-                for enemy in self.enemy_sprites:
-                    if self.player.rect.colliderect(enemy.rect):
-                        if hasattr(self.player, 'take_damage'):
-                            self.player.take_damage(enemy.damage if hasattr(enemy, 'damage') else 1)
-                        else:
-                            self.player.current_health -= (enemy.damage if hasattr(enemy, 'damage') else 1)
-                            if self.player.current_health <= 0:
-                                if hasattr(self.player, 'die'):
-                                    self.player.die()
+            # ### ATUALIZAÇÃO DO JOGO
+            # Só roda a lógica se não for Game Over
+            if not self.game_over:
+                if not self.show_attributes:
+                    self.gun_timer()
+                    self.input()
+                    if self.mira:
+                        self.mira.update()
+                    
+                    self.all_sprites.update(dt)
+                    
+                    self.bullet_collision()
+                    
+                    # Dano Inimigo -> Player
+                    for enemy in self.enemy_sprites:
+                        if self.player.rect.colliderect(enemy.rect):
+                            if hasattr(self.player, 'take_damage'):
+                                self.player.take_damage(enemy.damage if hasattr(enemy, 'damage') else 1)
+                            else:
+                                self.player.current_health -= 1
+                            
+                            # Empurrão (Knockback) para não tomar dano infinito instantâneo
+                            vec = pygame.Vector2(self.player.rect.center) - pygame.Vector2(enemy.rect.center)
+                            if vec.length() > 0:
+                                self.player.rect.center += vec.normalize() * 5
 
-            # RENDERIZAÇÃO 
+                            # ### AQUI É O PULO DO GATO:
+                            if self.player.current_health <= 0:
+                                self.game_over = True
+                                print("GAME OVER! A tela deve aparecer agora.")
+
+            # ### RENDERIZAÇÃO
             self.display_surface.fill("black")  
             
-            # Desenha todos os sprites do mapa com câmera centralizada no player
             self.all_sprites.draw(self.player.rect.center)
             
-            # Desenha o player manualmente (aplicando offset da câmera)
-            player_screen_pos = self.player.rect.topleft + self.all_sprites.offset
-            self.display_surface.blit(self.player.image, player_screen_pos)
+            # Desenha player se estiver vivo (ou pode desenhar sempre)
+            if self.player.current_health > 0:
+                player_screen_pos = self.player.rect.topleft + self.all_sprites.offset
+                self.display_surface.blit(self.player.image, player_screen_pos)
             
-            # Desenha a mira por cima de tudo
-            if self.mira:
+            if self.mira and not self.game_over:
                 self.mira.draw(self.display_surface)
 
-            # Se menu estiver ativo, desenha overlay e menu
             if self.show_attributes:
                 overlay = pygame.Surface((self.window_width, self.window_height))
                 overlay.set_alpha(128)
                 overlay.fill((0, 0, 0))
                 self.display_surface.blit(overlay, (0, 0))
                 self.draw_attribute_menu()
+            
+            # ### DESENHA O GAME OVER
+            if self.game_over:
+                self.draw_game_over_screen()
 
-            # Atualiza a tela
             pygame.display.flip()
         
-        # ✅ CORREÇÃO 4: pygame.quit() FORA do loop
         pygame.quit()
 
 if __name__ == "__main__":

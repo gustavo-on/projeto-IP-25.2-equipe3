@@ -10,3 +10,9 @@ class XP(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(center=pos)
 
         self.amount = amount
+
+class Banana(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+
+        
