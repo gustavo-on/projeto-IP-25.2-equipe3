@@ -39,6 +39,10 @@ class Game:
 
         self.spawn_positions = []
         self.score = 0
+        
+        # INVENTÁRIO DE BANANAS
+        self.banana_inventory = 0
+        self.banana_heal_amount = 3  # Cada banana cura 3 HP
 
         # Cria o player
         self.player_size = 50
@@ -106,6 +110,29 @@ class Game:
             self.can_shoot = False
             self.shoot_time = pygame.time.get_ticks()
     
+    def use_banana(self):
+        """Usa uma banana do inventário para curar"""
+        if self.banana_inventory > 0 and self.player.current_health < self.player.health:
+            # Calcula quanto vai curar
+            old_health = self.player.current_health
+            self.player.current_health = min(self.player.current_health + self.banana_heal_amount, self.player.health)
+            actual_heal = self.player.current_health - old_health
+            
+            # Remove banana do inventário
+            self.banana_inventory -= 1
+            
+            self.show_temp_message(f"🍌 Usou banana! +{actual_heal} HP", (255, 255, 0))
+            print(f"🍌 Banana usada! +{actual_heal} HP ({self.player.current_health}/{self.player.health})")
+            print(f"Bananas restantes: {self.banana_inventory}")
+        
+        elif self.banana_inventory <= 0:
+            self.show_temp_message("❌ Sem bananas!", (255, 100, 100))
+            print("❌ Você não tem bananas no inventário!")
+        
+        elif self.player.current_health >= self.player.health:
+            self.show_temp_message("💚 Vida cheia!", (100, 255, 100))
+            print("💚 Sua vida já está cheia!")
+    
     def gun_timer(self):
         if not self.can_shoot:
             if pygame.time.get_ticks() - self.shoot_time >= self.gun_cooldown:
@@ -169,7 +196,7 @@ class Game:
         """Spawna uma banana em posição aleatória"""
         x = randint(100, self.map_width - 100)
         y = randint(100, self.map_height - 100)
-        heal_amount = randint(2, 4)  # Cura entre 2-4 de vida
+        heal_amount = self.banana_heal_amount  # Valor fixo para consistência
         Banana(pos=(x, y), heal_amount=heal_amount, groups=(self.all_sprites, self.banana_sprites))
 
     def collect_coins(self):
@@ -178,27 +205,19 @@ class Game:
             if self.player.rect.colliderect(coin.rect):
                 self.score += coin.value
                 coin.kill()
-                self.show_temp_message(f" +{coin.value} moedas!", (255, 215, 0))
-                print(f"+{coin.value} moedas! Total: {self.score}")
+                self.show_temp_message(f"💰 +{coin.value} moedas!", (255, 215, 0))
+                print(f"💰 +{coin.value} moedas! Total: {self.score}")
 
     def collect_bananas(self):
-        """Verifica e coleta bananas"""
+        """Verifica e coleta bananas para o inventário"""
         for banana in self.banana_sprites:
             if self.player.rect.colliderect(banana.rect):
-                # Cura o player (sem ultrapassar vida máxima)
-                heal_amount = banana.heal_amount
-                old_health = self.player.current_health
-                self.player.current_health = min(self.player.current_health + heal_amount, self.player.health)
-                actual_heal = self.player.current_health - old_health
-                
+                # Adiciona banana ao inventário
+                self.banana_inventory += 1
                 banana.kill()
                 
-                if actual_heal > 0:
-                    self.show_temp_message(f"🍌 +{actual_heal} HP!", (255, 255, 0))
-                    print(f"🍌 Banana coletada! +{actual_heal} HP ({self.player.current_health}/{self.player.health})")
-                else:
-                    self.show_temp_message("🍌 Vida cheia!", (255, 255, 255))
-                    print("🍌 Banana coletada, mas vida já está cheia!")
+                self.show_temp_message(f"🍌 Banana coletada! ({self.banana_inventory})", (255, 255, 0))
+                print(f"🍌 Banana coletada! Inventário: {self.banana_inventory}")
 
     def show_temp_message(self, message, color=(255, 255, 255)):
         """Mostra uma mensagem temporária na tela"""
@@ -227,7 +246,7 @@ class Game:
         hud_bg.fill((0, 0, 0))
         self.display_surface.blit(hud_bg, (10, 10))
         
-        score_text = self.hud_font.render(f"{self.score}", True, "gold")
+        score_text = self.hud_font.render(f"💰 {self.score}", True, "gold")
         self.display_surface.blit(score_text, (20, 15))
         
         # XP e Level
@@ -276,6 +295,19 @@ class Game:
         # Texto da vida
         health_text = self.ui_font.render(f"{self.player.current_health}/{self.player.health}", True, "white")
         self.display_surface.blit(health_text, (bar_x + bar_width // 2 - health_text.get_width() // 2, bar_y - 2))
+        
+        # INVENTÁRIO DE BANANAS
+        banana_bg = pygame.Surface((220, 50))
+        banana_bg.set_alpha(150)
+        banana_bg.fill((0, 0, 0))
+        self.display_surface.blit(banana_bg, (10, 200))
+        
+        banana_text = self.hud_font.render(f"🍌 x{self.banana_inventory}", True, (255, 255, 0))
+        self.display_surface.blit(banana_text, (20, 205))
+        
+        # Dica de uso
+        hint_text = self.ui_font.render("(H para usar)", True, (200, 200, 200))
+        self.display_surface.blit(hint_text, (120, 212))
 
     def draw_attribute_menu(self):
         """Menu de atributos do jogador"""
@@ -283,7 +315,7 @@ class Game:
         border_color = "white"
         text_color = "white"
         padding = 20
-        width, height = 350, 250
+        width, height = 350, 280
         
         x = (self.window_width - width) // 2
         y = (self.window_height - height) // 2
@@ -303,7 +335,8 @@ class Game:
             f"Health: {self.player.current_health}/{self.player.health}",
             f"Range: {self.player.range_size}",
             f"XP: {self.player.current_xp}/{self.player.next_level_up}",
-            f"Moedas: {self.score}"
+            f"Moedas: {self.score}",
+            f"Bananas: {self.banana_inventory}"
         ]
         
         for attr in attributes:
@@ -420,9 +453,10 @@ class Game:
         # Reseta estado
         self.player_invincible = False
         self.score = 0
+        self.banana_inventory = 0
         self.game_over = False
         self.temp_message = ""
-        print("Jogo resetado!")
+        print("✅ Jogo resetado!")
 
     def run(self):
         """Loop principal do jogo"""
@@ -441,6 +475,10 @@ class Game:
                 if not self.game_over and event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_m:
                         self.show_attributes = not self.show_attributes
+                    
+                    # USAR BANANA COM TECLA H
+                    if event.key == pygame.K_h:
+                        self.use_banana()
                 
                 # Spawn de inimigos
                 if event.type == self.enemy_event and not self.game_over:
@@ -492,7 +530,7 @@ class Game:
                             
                             if self.player.current_health <= 0:
                                 self.game_over = True
-                                print("GAME OVER!")
+                                print("💀 GAME OVER!")
                             
                             break
 
