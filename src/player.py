@@ -27,7 +27,7 @@ class Player(Entity):
         # Vetor de direção do movimento
         self.collision_sprites = collision_sprites
         self.direction = pygame.Vector2(0, 0)
-        self.speed = 200  
+        self.speed = 500 
 
     def input(self):
         keys = pygame.key.get_pressed()

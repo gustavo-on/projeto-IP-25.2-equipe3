@@ -72,7 +72,7 @@ class Game:
 
         # Timer de spawn
         self.enemy_event = pygame.USEREVENT + 1
-        pygame.time.set_timer(self.enemy_event, 2000)
+        pygame.time.set_timer(self.enemy_event, 250) # spawn de inimigos 
     
     def load_images(self):
         self.bullet_surf = pygame.Surface((10, 10))
