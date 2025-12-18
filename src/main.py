@@ -1,6 +1,7 @@
 import pygame
 import os
 
+
 from random import randint, choice
 from pytmx.util_pygame import load_pygame
 from player import Player
@@ -13,8 +14,10 @@ from coletaveis import XP, Coin, Banana, Rock
 from button import Button
 from store import Store
 
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TILE_SIZE = 64
+
 
 class Game:
     def __init__(self):
@@ -32,6 +35,18 @@ class Game:
         self.clock = pygame.time.Clock()
         self.running = True
         self.game_over = False
+        
+        # Sistema de dificuldade progressiva SEM LIMITES
+        self.game_time = 0
+        self.difficulty_level = 1
+        self.last_difficulty_increase = 0
+        self.difficulty_increase_interval = 20  # Aumenta a cada 20 segundos (mais rápido)
+        
+        # Configurações iniciais de dificuldade
+        self.enemy_spawn_rate = 2000
+        self.enemy_damage = 1
+        self.enemy_health = 1
+        self.enemy_speed = 100
         
         # Grupos de sprites
         self.all_sprites = CameraGroups()
@@ -63,7 +78,6 @@ class Game:
             mira_path = os.path.join(BASE_DIR, "..", "assets", "images", "mira.png")
             self.mira = Crosshair(mira_path)
         except:
-            print("Imagem da mira não encontrada.")
             self.mira = None
         
         self.setup()
@@ -95,9 +109,9 @@ class Game:
         self.temp_message_time = 0
         self.temp_message_duration = 2000
 
-        # Timers de spawn, spawn rate
+        # Timers de spawn
         self.enemy_event = pygame.USEREVENT + 1
-        pygame.time.set_timer(self.enemy_event, 2000)
+        pygame.time.set_timer(self.enemy_event, self.enemy_spawn_rate)
         
         self.coin_event = pygame.USEREVENT + 2
         pygame.time.set_timer(self.coin_event, 3000)
@@ -119,18 +133,13 @@ class Game:
     def load_images(self):
         """Carrega imagens para projéteis"""
         try:
-            # Tenta carregar imagem da pedra
             bullet_path = os.path.join(BASE_DIR, "..", "assets", "images", "pedra.png")
             original_bullet = pygame.image.load(bullet_path).convert_alpha()
-            
-            # Redimensiona a pedra (ajuste o tamanho conforme necessário)
             self.bullet_surf = pygame.transform.scale(original_bullet, (20, 20))
-            
-            
         except Exception as e:
-            # Fallback: quadrado vermelho se não encontrar a imagem
             self.bullet_surf = pygame.Surface((10, 10))
             self.bullet_surf.fill("red")
+    
     def input(self):
         if pygame.mouse.get_pressed()[0] and self.can_shoot and not self.game_over:
             if self.rock_inventory > 0:
@@ -174,7 +183,6 @@ class Game:
             
             self.can_punch = False
             self.punch_time = pygame.time.get_ticks()
-            
     
     def use_banana(self):
         """Usa uma banana do inventário para curar"""
@@ -209,6 +217,64 @@ class Game:
             if pygame.time.get_ticks() - self.last_damage_time >= self.invincible_duration:
                 self.player_invincible = False
 
+    def update_difficulty(self, dt):
+        """Atualiza a dificuldade do jogo - SEM LIMITES, FICA IMPOSSÍVEL"""
+        if self.game_over:
+            return
+        
+        # Incrementa tempo de jogo
+        self.game_time += dt
+        
+        # Verifica se deve aumentar a dificuldade
+        if self.game_time - self.last_difficulty_increase >= self.difficulty_increase_interval:
+            self.difficulty_level += 1
+            self.last_difficulty_increase = self.game_time
+            
+            # Spawn rate aumenta EXPONENCIALMENTE (fica absurdo)
+            if self.difficulty_level <= 5:
+                self.enemy_spawn_rate = max(300, self.enemy_spawn_rate - 300)
+            elif self.difficulty_level <= 10:
+                self.enemy_spawn_rate = max(150, self.enemy_spawn_rate - 100)
+            elif self.difficulty_level <= 20:
+                self.enemy_spawn_rate = max(50, self.enemy_spawn_rate - 20)
+            else:
+                # Após nível 20, spawna INSTANTANEAMENTE
+                self.enemy_spawn_rate = 50
+            
+            pygame.time.set_timer(self.enemy_event, self.enemy_spawn_rate)
+            
+            # Dano dos inimigos aumenta progressivamente SEM LIMITE
+            self.enemy_damage = 1 + self.difficulty_level // 2
+            
+            # Vida dos inimigos aumenta SEM LIMITE
+            self.enemy_health = 1 + self.difficulty_level // 2
+            
+            # Velocidade aumenta SEM LIMITE (inimigos ficam super rápidos)
+            self.enemy_speed = 100 + (self.difficulty_level * 15)
+            
+            # Mensagem de aviso com intensidade progressiva
+            if self.difficulty_level <= 5:
+                msg_color = (255, 200, 0)
+                emoji = "⚠️"
+            elif self.difficulty_level <= 10:
+                msg_color = (255, 100, 0)
+                emoji = "🔥"
+            elif self.difficulty_level <= 20:
+                msg_color = (255, 0, 0)
+                emoji = "💀"
+            else:
+                msg_color = (200, 0, 0)
+                emoji = "☠️"
+            
+            self.show_temp_message(f"{emoji} DIFICULDADE {self.difficulty_level}! {emoji}", msg_color)
+            print(f"\n{'='*60}")
+            print(f"{'' * min(self.difficulty_level, 30)} DIFICULDADE NÍVEL {self.difficulty_level} {'' * min(self.difficulty_level, 30)}")
+            print(f"   Spawn Rate: {self.enemy_spawn_rate}ms (SPAWNS A CADA {self.enemy_spawn_rate/1000:.2f}s)")
+            print(f"   Dano Inimigo: {self.enemy_damage} ({self.enemy_damage}x inicial)")
+            print(f"   Vida Inimigo: {self.enemy_health} HP")
+            print(f"   Velocidade: {self.enemy_speed} ({(self.enemy_speed/100):.1f}x inicial)")
+            print(f"{'='*60}\n")
+
     def setup(self):
         map_path = os.path.join(BASE_DIR, "..", "data", "maps", "world.tmx")
         
@@ -224,8 +290,6 @@ class Game:
         for obj in self.map.get_layer_by_name("Objects"):
             if obj.image is not None:
                 CollisionSprite((obj.x, obj.y), obj.image, (self.all_sprites, self.collision_sprites))
-            else:
-                print(f"⚠️ Objeto sem imagem ignorado em ({obj.x}, {obj.y})")
         
         for obj in self.map.get_layer_by_name("Collisions"):
             CollisionSprite((obj.x, obj.y), pygame.Surface((obj.width, obj.height)), self.collision_sprites)
@@ -280,7 +344,6 @@ class Game:
                 self.score += coin.value
                 coin.kill()
                 self.show_temp_message(f"💰 +{coin.value} moedas!", (255, 215, 0))
-                print(f"💰 +{coin.value} moedas! Total: {self.score}")
 
     def collect_bananas(self):
         """Verifica e coleta bananas para o inventário"""
@@ -288,9 +351,7 @@ class Game:
             if self.player.rect.colliderect(banana.rect):
                 self.banana_inventory += 1
                 banana.kill()
-                
                 self.show_temp_message(f"🍌 Banana coletada! ({self.banana_inventory})", (255, 255, 0))
-                print(f"🍌 Banana coletada! Inventário: {self.banana_inventory}")
 
     def collect_rocks(self):
         """Verifica e coleta pedras"""
@@ -298,9 +359,7 @@ class Game:
             if self.player.rect.colliderect(rock.rect):
                 self.rock_inventory += 1
                 rock.kill()
-                
                 self.show_temp_message(f"🪨 Pedra coletada! ({self.rock_inventory})", (150, 150, 150))
-                print(f"🪨 Pedra coletada! Inventário: {self.rock_inventory}")
 
     def show_temp_message(self, message, color=(255, 255, 255)):
         """Mostra uma mensagem temporária na tela"""
@@ -314,7 +373,6 @@ class Game:
             msg_surf = self.hud_font.render(self.temp_message, True, self.temp_message_color)
             msg_rect = msg_surf.get_rect(center=(self.window_width // 2, 100))
             
-            # Sombra
             shadow_surf = self.hud_font.render(self.temp_message, True, (0, 0, 0))
             shadow_rect = shadow_surf.get_rect(center=(self.window_width // 2 + 2, 102))
             self.display_surface.blit(shadow_surf, shadow_rect)
@@ -332,7 +390,7 @@ class Game:
         score_text = self.hud_font.render(f"💰 {self.score}", True, "gold")
         self.display_surface.blit(score_text, (20, 15))
         
-        # XP e Level
+        # XP e Level (SEM LIMITE)
         xp_bg = pygame.Surface((220, 60))
         xp_bg.set_alpha(150)
         xp_bg.fill((0, 0, 0))
@@ -356,10 +414,8 @@ class Game:
         bar_x = 20
         bar_y = 150
         
-        # Fundo da barra (vermelho escuro)
         pygame.draw.rect(self.display_surface, (100, 0, 0), (bar_x, bar_y, bar_width, bar_height))
         
-        # Barra de vida atual (verde/amarelo/vermelho baseado na porcentagem)
         health_percent = self.player.current_health / self.player.health
         current_bar_width = int(bar_width * health_percent)
         
@@ -371,11 +427,8 @@ class Game:
             bar_color = (255, 0, 0)
         
         pygame.draw.rect(self.display_surface, bar_color, (bar_x, bar_y, current_bar_width, bar_height))
-        
-        # Borda da barra
         pygame.draw.rect(self.display_surface, (255, 255, 255), (bar_x, bar_y, bar_width, bar_height), 2)
         
-        # Texto da vida
         health_text = self.ui_font.render(f"{self.player.current_health}/{self.player.health}", True, "white")
         self.display_surface.blit(health_text, (bar_x + bar_width // 2 - health_text.get_width() // 2, bar_y - 2))
         
@@ -388,7 +441,6 @@ class Game:
         banana_text = self.hud_font.render(f"🍌 x{self.banana_inventory}", True, (255, 255, 0))
         self.display_surface.blit(banana_text, (20, 205))
         
-        # Dica de uso
         hint_text = self.ui_font.render("(H para usar)", True, (200, 200, 200))
         self.display_surface.blit(hint_text, (120, 212))
         
@@ -415,6 +467,34 @@ class Game:
             
             cooldown_text = self.ui_font.render("👊", True, (255, 200, 0))
             self.display_surface.blit(cooldown_text, (self.window_width - 130, 10))
+        
+        # Indicador de dificuldade (cores mais intensas)
+        diff_bg = pygame.Surface((220, 60))
+        diff_bg.set_alpha(150)
+        diff_bg.fill((0, 0, 0))
+        self.display_surface.blit(diff_bg, (self.window_width - 240, 50))
+        
+        # Cor baseada no nível (fica mais vermelho)
+        if self.difficulty_level < 3:
+            diff_color = (255, 255, 255)
+        elif self.difficulty_level < 5:
+            diff_color = (255, 255, 0)
+        elif self.difficulty_level < 8:
+            diff_color = (255, 150, 0)
+        elif self.difficulty_level < 12:
+            diff_color = (255, 50, 0)
+        elif self.difficulty_level < 20:
+            diff_color = (255, 0, 0)
+        else:
+            # IMPOSSÍVEL - vermelho pulsante
+            pulse = (pygame.time.get_ticks() // 200) % 2
+            diff_color = (255, 0, 0) if pulse else (150, 0, 0)
+        
+        diff_text = self.ui_font.render(f"🔥 Dif: {self.difficulty_level}", True, diff_color)
+        self.display_surface.blit(diff_text, (self.window_width - 230, 55))
+        
+        time_text = self.ui_font.render(f"⏱️ {int(self.game_time)}s", True, (200, 200, 200))
+        self.display_surface.blit(time_text, (self.window_width - 230, 80))
 
     def draw_attribute_menu(self):
         """Menu de atributos com sistema de pontos de skill"""
@@ -444,11 +524,9 @@ class Game:
         
         y_offset += 50
         
-        # Limpa e recria botões
         self.upgrade_buttons = []
         button_font = pygame.font.Font(None, 26)
         
-        # Configuração dos atributos
         upgrades = [
             {
                 'name': '1. Attack',
@@ -474,12 +552,10 @@ class Game:
         ]
         
         for i, upgrade in enumerate(upgrades):
-            # Texto do atributo
             attr_text = f"{upgrade['icon']} {upgrade['name']}: {upgrade['current']}"
             attr_surf = self.ui_font.render(attr_text, True, upgrade['color'])
             self.display_surface.blit(attr_surf, (menu_rect.left + padding, y_offset))
             
-            # Botão de upgrade
             if self.attribute_points > 0:
                 button_x = menu_rect.right - 100
                 button_y = y_offset - 5
@@ -494,7 +570,6 @@ class Game:
                 button.upgrade_key = upgrade['key']
                 self.upgrade_buttons.append(button)
                 
-                # Desenha o botão
                 mouse_pos = pygame.mouse.get_pos()
                 button.check_hover(mouse_pos)
                 button.draw(self.display_surface, button_font)
@@ -504,13 +579,11 @@ class Game:
             
             y_offset += 60
         
-        # Separador
         pygame.draw.line(self.display_surface, (100, 100, 100), 
                         (menu_rect.left + padding, y_offset), 
                         (menu_rect.right - padding, y_offset), 2)
         y_offset += 15
         
-        # Informações adicionais
         info_texts = [
             f"Level: {self.player.level}",
             f"XP: {self.player.current_xp}/{self.player.next_level_up}",
@@ -525,7 +598,6 @@ class Game:
             self.display_surface.blit(surf, (menu_rect.left + padding, y_offset))
             y_offset += 28
         
-        # Instruções
         y_offset += 5
         if self.attribute_points > 0:
             inst_text = "Clique nos botões ou pressione 1, 2 ou 3"
@@ -538,7 +610,6 @@ class Game:
         inst_rect = inst_surf.get_rect(centerx=menu_rect.centerx, top=y_offset)
         self.display_surface.blit(inst_surf, inst_rect)
         
-        # Fechar menu
         close_text = pygame.font.Font(None, 22).render("Pressione M para fechar", True, (200, 200, 200))
         close_rect = close_text.get_rect(midbottom=(menu_rect.centerx, menu_rect.bottom - 10))
         self.display_surface.blit(close_text, close_rect)
@@ -551,20 +622,30 @@ class Game:
         self.display_surface.blit(overlay, (0, 0))
 
         game_over_surf = self.game_over_font.render("GAME OVER", True, "red")
-        game_over_rect = game_over_surf.get_rect(center=(self.window_width/2, self.window_height/2 - 80))
+        game_over_rect = game_over_surf.get_rect(center=(self.window_width/2, self.window_height/2 - 100))
         self.display_surface.blit(game_over_surf, game_over_rect)
         
         # Estatísticas finais
-        score_surf = self.ui_font.render(f"Moedas: {self.score}", True, "gold")
-        score_rect = score_surf.get_rect(center=(self.window_width/2, self.window_height/2 - 20))
+        stats_font = pygame.font.Font(None, 35)
+        
+        score_surf = stats_font.render(f"💰 Moedas: {self.score}", True, "gold")
+        score_rect = score_surf.get_rect(center=(self.window_width/2, self.window_height/2 - 40))
         self.display_surface.blit(score_surf, score_rect)
         
-        level_surf = self.ui_font.render(f"Level: {self.player.level}", True, "cyan")
-        level_rect = level_surf.get_rect(center=(self.window_width/2, self.window_height/2 + 10))
+        level_surf = stats_font.render(f"🎯 Level: {self.player.level}", True, "cyan")
+        level_rect = level_surf.get_rect(center=(self.window_width/2, self.window_height/2 - 5))
         self.display_surface.blit(level_surf, level_rect)
+        
+        time_surf = stats_font.render(f"⏱️ Sobreviveu: {int(self.game_time)}s", True, "white")
+        time_rect = time_surf.get_rect(center=(self.window_width/2, self.window_height/2 + 30))
+        self.display_surface.blit(time_surf, time_rect)
+        
+        diff_surf = stats_font.render(f"🔥 Dificuldade Final: {self.difficulty_level}", True, "red")
+        diff_rect = diff_surf.get_rect(center=(self.window_width/2, self.window_height/2 + 65))
+        self.display_surface.blit(diff_surf, diff_rect)
 
         restart_surf = self.ui_font.render("Pressione R para reiniciar", True, "white")
-        restart_rect = restart_surf.get_rect(center=(self.window_width/2, self.window_height/2 + 60))
+        restart_rect = restart_surf.get_rect(center=(self.window_width/2, self.window_height/2 + 110))
         self.display_surface.blit(restart_surf, restart_rect)
     
     def bullet_collision(self):
@@ -588,12 +669,10 @@ class Game:
         for punch in self.punch_sprites:
             hits = pygame.sprite.spritecollide(punch, self.enemy_sprites, False)
             for enemy in hits:
-                # Evita atingir o mesmo inimigo múltiplas vezes com o mesmo soco
                 if enemy not in punch.hit_enemies:
                     enemy.health -= punch.damage
                     punch.hit_enemies.add(enemy)
                     
-                    # Efeito de knockback maior no soco
                     enemy_pos = pygame.Vector2(enemy.rect.center)
                     punch_pos = pygame.Vector2(punch.rect.center)
                     knockback = (enemy_pos - punch_pos).normalize() * 30
@@ -602,8 +681,6 @@ class Game:
                     if enemy.health <= 0:
                         self.drop_xp(enemy.rect.center, xp_amount=5)
                         enemy.kill()
-                    
-                    print(f"💥 Soco acertou! Dano: {punch.damage}")
     
     def drop_xp(self, position, xp_amount=1):
         """Dropa XP na posição especificada"""
@@ -615,7 +692,7 @@ class Game:
         )
     
     def collect_items(self):
-        """Coleta XP"""
+        """Coleta XP - SEM LIMITE DE LEVEL"""
         if self.player.current_health <= 0:
             return
         
@@ -624,34 +701,23 @@ class Game:
             if isinstance(item, XP):
                 try:
                     xp_gained = item.collect()
-                    if self.player.level < 5:
-                        self.player.current_xp += xp_gained
-                        print(f"✨ +{xp_gained} XP! ({self.player.current_xp}/{self.player.next_level_up})")
+                    # REMOVIDO O LIMITE DE LEVEL 5
+                    self.player.current_xp += xp_gained
                     
-                    # Level up
-                        if self.player.current_xp >= self.player.next_level_up:
-                            self.player.level += 1
-                            self.player.current_xp = 0
-
-                            if self.player.level == 2:
-                                self.player.next_level_up = 20
-                            elif self.player.level == 3:
-                                self.player.next_level_up = 30
-                            elif self.player.level == 4:
-                                self.player.next_level_up = 40
-                            elif self.player.level >= 5:
-                                self.player.next_level_up = 9999
-                                print("Nível Máximo Alcançado")
-
-                            self.attribute_points += 1
-                            self.show_temp_message(f"🎉 LEVEL {self.player.level}! +1 Ponto", (0, 255, 255))
-                            print(f"🎉 LEVEL UP! Level {self.player.level}! Ganhou 1 ponto de atributo")
+                    if self.player.current_xp >= self.player.next_level_up:
+                        self.player.level += 1
+                        self.player.current_xp = 0
+                        
+                        # XP necessário aumenta progressivamente
+                        self.player.next_level_up = 10 + (self.player.level * 10)
+                        
+                        self.attribute_points += 1
+                        self.show_temp_message(f"🎉 LEVEL {self.player.level}! +1 Ponto", (0, 255, 255))
                 except Exception as e:
                     print(f"Erro ao coletar XP: {e}")
 
     def reset_game(self):
         """Reseta o jogo"""
-        # Limpa grupos
         self.attribute_points = 0
         self.enemy_sprites.empty()
         self.bullet_sprites.empty()
@@ -661,12 +727,10 @@ class Game:
         self.banana_sprites.empty()
         self.rock_sprites.empty()
         
-        # Remove sprites
         for sprite in list(self.all_sprites):
             if isinstance(sprite, (Enemy, Bullet, Punch, XP, Coin, Banana, Rock)):
                 sprite.kill()
         
-        # Reseta player
         self.player.health = 10
         self.player.current_health = 10
         self.player.current_xp = 0
@@ -676,13 +740,23 @@ class Game:
         self.player.speed = 500
         self.player.rect.center = self.player_start_pos
         
-        # Reseta estado
         self.player_invincible = False
         self.score = 0
         self.banana_inventory = 0
         self.rock_inventory = 3
         self.game_over = False
         self.temp_message = ""
+        
+        # Reseta dificuldade
+        self.game_time = 0
+        self.difficulty_level = 1
+        self.last_difficulty_increase = 0
+        self.enemy_spawn_rate = 2000
+        self.enemy_damage = 1
+        self.enemy_health = 1
+        self.enemy_speed = 100
+        pygame.time.set_timer(self.enemy_event, self.enemy_spawn_rate)
+        
         print("✅ Jogo resetado!")
     
     def apply_attribute_upgrade(self, upgrade_key):
@@ -696,65 +770,50 @@ class Game:
         if upgrade_key == 'attack':
             self.player.damage += 1
             self.show_temp_message("⚔️ Attack +1!", (255, 100, 100))
-            print(f"[UPGRADE] Attack aumentado para {self.player.damage}")
             
         elif upgrade_key == 'health':
             self.player.health += 5
             self.player.current_health += 5
             self.show_temp_message("❤️ Health +5!", (100, 255, 100))
-            print(f"[UPGRADE] Health aumentado para {self.player.health}")
             
         elif upgrade_key == 'speed':
             self.player.speed += 10
             self.show_temp_message("⚡ Speed +10!", (100, 150, 255))
-            print(f"[UPGRADE] Speed aumentado para {self.player.speed}")
-        
-        print(f"Pontos restantes: {self.attribute_points}")
 
     def run(self):
         """Loop principal do jogo"""
         while self.running:
             dt = self.clock.tick(60) / 1000
 
-            # ========= EVENTOS =========
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.running = False
 
-                # ----- MENU -----
                 if self.game_state == "menu":
                     result = self.menu.handle_events(event)
                     if result == "start_game":
                         self.game_state = "playing"
                         pygame.mouse.set_visible(False)
-                        print("Jogo iniciado!")
                     elif result == "quit":
                         self.running = False
 
-                # ----- JOGANDO -----
                 elif self.game_state == "playing":
 
-                    # Reiniciar no game over
                     if self.game_over:
                         if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
                             self.reset_game()
 
-                    # Teclas
                     if not self.game_over and event.type == pygame.KEYDOWN:
-                        # Abrir/fechar menu de atributos
                         if event.key == pygame.K_l:
                             self.show_store = not self.show_store
                             pygame.mouse.set_visible(self.show_store)
-                            print(f"Loja {'aberta' if self.show_store else 'fechada'}")
                         if event.key == pygame.K_m:
                             self.show_attributes = not self.show_attributes
                             pygame.mouse.set_visible(self.show_attributes)
 
-                        # Usar banana
                         if event.key == pygame.K_h:
                             self.use_banana()
 
-                        # Upgrades 1, 2, 3
                         if self.show_attributes and self.attribute_points > 0:
                             if event.key == pygame.K_1:
                                 self.apply_attribute_upgrade('attack')
@@ -763,7 +822,6 @@ class Game:
                             elif event.key == pygame.K_3:
                                 self.apply_attribute_upgrade('speed')
 
-                    # Clique nos botões do menu de atributos
                     if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                         if self.show_attributes and self.attribute_points > 0:
                             mouse_pos = pygame.mouse.get_pos()
@@ -776,34 +834,32 @@ class Game:
                             item, success = self.store.handle_click(mouse_pos, self.score)
                             
                             if item and success:
-                                # Compra bem-sucedida
-                                self.score -= 4  # Gasta 4 moedas
+                                self.score -= 4
                                 
                                 if item == 'banana':
                                     self.banana_inventory += 1
                                     self.show_temp_message("🍌 Banana comprada!", (255, 255, 0))
-                                    print(f"🛒 Comprou BANANA! Moedas: {self.score}")
                                 
                                 elif item == 'rock':
                                     self.rock_inventory += 1
                                     self.show_temp_message("🪨 Pedra comprada!", (150, 150, 150))
-                                    print(f"🛒 Comprou PEDRA! Moedas: {self.score}")
                             
                             elif item and not success:
-                                # Tentou comprar sem moedas
                                 self.show_temp_message("❌ Moedas insuficientes!", (255, 100, 100))
-                                print(f"❌ Sem moedas! Você tem {self.score}, precisa de 4")
 
-                    # Spawns
                     if event.type == self.enemy_event and not self.game_over:
                         if self.spawn_positions:
-                            Enemy(
+                            enemy = Enemy(
                                 pos=choice(self.spawn_positions),
                                 frames=None,
                                 groups=(self.all_sprites, self.enemy_sprites),
                                 player=self.player,
                                 collision_sprites=self.collision_sprites
                             )
+                            # Aplica dificuldade ao inimigo
+                            enemy.health = self.enemy_health
+                            enemy.damage = self.enemy_damage
+                            enemy.speed = self.enemy_speed
 
                     if event.type == self.coin_event and not self.game_over:
                         self.spawn_coin()
@@ -814,18 +870,14 @@ class Game:
                     if event.type == self.rock_event and not self.game_over:
                         self.spawn_rock()
 
-            # ========= ATUALIZAÇÃO / DESENHO =========
-
-            # ----- MENU -----
             if self.game_state == "menu":
                 self.menu.update()
                 self.menu.draw()
 
-            # ----- JOGANDO -----
             elif self.game_state == "playing":
 
-                # Atualização da lógica
                 if not self.game_over and not self.show_attributes and not self.show_store:
+                    self.update_difficulty(dt)
                     self.gun_timer()
                     self.punch_timer()
                     self.invincibility_timer()
@@ -842,7 +894,6 @@ class Game:
                     self.collect_bananas()
                     self.collect_rocks()
 
-                    # Dano dos inimigos
                     if not self.player_invincible:
                         for enemy in self.enemy_sprites:
                             if self.player.rect.colliderect(enemy.rect):
@@ -858,20 +909,16 @@ class Game:
 
                                 if self.player.current_health <= 0:
                                     self.game_over = True
-                                    print("💀 GAME OVER!")
                                 break
 
-                # Renderização
                 self.display_surface.fill("black")
                 self.all_sprites.draw(self.player.rect.center)
 
-                # Player piscando quando invencível
                 if self.player.current_health > 0:
                     if not self.player_invincible or (pygame.time.get_ticks() // 100) % 2:
                         player_screen_pos = self.player.rect.topleft + self.all_sprites.offset
                         self.display_surface.blit(self.player.image, player_screen_pos)
                 
-                # Desenha socos
                 for punch in self.punch_sprites:
                     punch_screen_pos = punch.rect.topleft + self.all_sprites.offset
                     self.display_surface.blit(punch.image, punch_screen_pos)
@@ -899,6 +946,7 @@ class Game:
             pygame.display.flip()
 
         pygame.quit()
+
 
 if __name__ == "__main__":
     game = Game()

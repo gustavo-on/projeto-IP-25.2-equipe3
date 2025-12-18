@@ -107,19 +107,15 @@ class Punch(pygame.sprite.Sprite):
                 self.sprite_downleft = pygame.transform.scale(
                     pygame.image.load(downleft_path).convert_alpha(), (100, 100)
                 )
-                print("✅ Sprites diagonais carregados!")
             except:
                 # Se não tiver diagonais, rotaciona os cardinais
-                print("⚠️ Sprites diagonais não encontrados, usando rotação")
                 self.sprite_upright = pygame.transform.rotate(self.sprite_right, 45)
                 self.sprite_upleft = pygame.transform.rotate(self.sprite_left, -45)
                 self.sprite_downright = pygame.transform.rotate(self.sprite_right, -45)
                 self.sprite_downleft = pygame.transform.rotate(self.sprite_left, 45)
             
-            print("✅ Sprites de corte carregados com sucesso!")
             
         except Exception as e:
-            print(f"⚠️ Erro ao carregar sprites direcionais: {e}")
             # Fallback: círculo
             fallback = pygame.Surface((50, 50), pygame.SRCALPHA)
             pygame.draw.circle(fallback, (255, 200, 0), (25, 25), 20)
