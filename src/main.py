@@ -11,6 +11,7 @@ from aim import Crosshair
 from enemies import Enemy
 from coletaveis import XP, Coin, Banana, Rock
 from button import Button
+from store import Store
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TILE_SIZE = 64
@@ -24,6 +25,9 @@ class Game:
         
         self.display_surface = pygame.display.set_mode((self.window_width, self.window_height))
         pygame.display.set_caption("Apenas Comece")
+
+        self.store = Store(self.display_surface, self.window_width, self.window_height)
+        self.show_store = False
         
         self.clock = pygame.time.Clock()
         self.running = True
@@ -666,6 +670,10 @@ class Game:
                     # Teclas
                     if not self.game_over and event.type == pygame.KEYDOWN:
                         # Abrir/fechar menu de atributos
+                        if event.key == pygame.K_l:
+                            self.show_store = not self.show_store
+                            pygame.mouse.set_visible(self.show_store)
+                            print(f"Loja {'aberta' if self.show_store else 'fechada'}")
                         if event.key == pygame.K_m:
                             self.show_attributes = not self.show_attributes
                             pygame.mouse.set_visible(self.show_attributes)
@@ -688,8 +696,31 @@ class Game:
                         if self.show_attributes and self.attribute_points > 0:
                             mouse_pos = pygame.mouse.get_pos()
                             for button in self.upgrade_buttons:
-                                if button.is_clicked(mouse_pos, True):
+                                if button.is_clicked(mouse_pos):
                                     self.apply_attribute_upgrade(button.upgrade_key)
+                        
+                        if self.show_store:
+                            mouse_pos = pygame.mouse.get_pos()
+                            item, success = self.store.handle_click(mouse_pos, self.score)
+                            
+                            if item and success:
+                                # Compra bem-sucedida
+                                self.score -= 4  # Gasta 4 moedas
+                                
+                                if item == 'banana':
+                                    self.banana_inventory += 1
+                                    self.show_temp_message("🍌 Banana comprada!", (255, 255, 0))
+                                    print(f"🛒 Comprou BANANA! Moedas: {self.score}")
+                                
+                                elif item == 'rock':
+                                    self.rock_inventory += 1
+                                    self.show_temp_message("🪨 Pedra comprada!", (150, 150, 150))
+                                    print(f"🛒 Comprou PEDRA! Moedas: {self.score}")
+                            
+                            elif item and not success:
+                                # Tentou comprar sem moedas
+                                self.show_temp_message("❌ Moedas insuficientes!", (255, 100, 100))
+                                print(f"❌ Sem moedas! Você tem {self.score}, precisa de 4")
 
                     # Spawns
                     if event.type == self.enemy_event and not self.game_over:
@@ -722,7 +753,7 @@ class Game:
             elif self.game_state == "playing":
 
                 # Atualização da lógica
-                if not self.game_over and not self.show_attributes:
+                if not self.game_over and not self.show_attributes and not self.show_store:
                     self.gun_timer()
                     self.invincibility_timer()
                     self.input()
@@ -778,6 +809,9 @@ class Game:
                     overlay.fill((0, 0, 0))
                     self.display_surface.blit(overlay, (0, 0))
                     self.draw_attribute_menu()
+                
+                if self.show_store:
+                    self.store.draw(self.score)
 
                 if self.game_over:
                     self.draw_game_over_screen()
