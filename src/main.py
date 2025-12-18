@@ -2,6 +2,7 @@ import pygame
 import os
 
 
+
 from random import randint, choice
 from pytmx.util_pygame import load_pygame
 from player import Player
@@ -15,8 +16,10 @@ from button import Button
 from store import Store
 
 
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TILE_SIZE = 64
+
 
 
 class Game:
@@ -40,7 +43,7 @@ class Game:
         self.game_time = 0
         self.difficulty_level = 1
         self.last_difficulty_increase = 0
-        self.difficulty_increase_interval = 20  # Aumenta a cada 20 segundos (mais rápido)
+        self.difficulty_increase_interval = 20
         
         # Configurações iniciais de dificuldade
         self.enemy_spawn_rate = 2000
@@ -160,10 +163,10 @@ class Game:
                 self.shoot_time = pygame.time.get_ticks()
                 
                 if self.rock_inventory == 0:
-                    self.show_temp_message("⚠️ Sem pedras!", (255, 150, 0))
+                    self.show_temp_message("Sem pedras!", (255, 150, 0))
             else:
                 if not hasattr(self, '_last_no_rock_msg') or pygame.time.get_ticks() - self._last_no_rock_msg > 1000:
-                    self.show_temp_message("❌ Colete pedras para atirar!", (255, 100, 100))
+                    self.show_temp_message("Colete pedras para atirar!", (255, 100, 100))
                     self._last_no_rock_msg = pygame.time.get_ticks()
     
     def input_punch(self):
@@ -193,13 +196,13 @@ class Game:
             
             self.banana_inventory -= 1
             
-            self.show_temp_message(f"🍌 Usou banana! +{actual_heal} HP", (255, 255, 0))
+            self.show_temp_message(f"Usou banana! +{actual_heal} HP", (255, 255, 0))
         
         elif self.banana_inventory <= 0:
-            self.show_temp_message("❌ Sem bananas!", (255, 100, 100))
+            self.show_temp_message("Sem bananas!", (255, 100, 100))
         
         elif self.player.current_health >= self.player.health:
-            self.show_temp_message("💚 Vida cheia!", (100, 255, 100))
+            self.show_temp_message("Vida cheia!", (100, 255, 100))
     
     def gun_timer(self):
         if not self.can_shoot:
@@ -222,15 +225,12 @@ class Game:
         if self.game_over:
             return
         
-        # Incrementa tempo de jogo
         self.game_time += dt
         
-        # Verifica se deve aumentar a dificuldade
         if self.game_time - self.last_difficulty_increase >= self.difficulty_increase_interval:
             self.difficulty_level += 1
             self.last_difficulty_increase = self.game_time
             
-            # Spawn rate aumenta EXPONENCIALMENTE (fica absurdo)
             if self.difficulty_level <= 5:
                 self.enemy_spawn_rate = max(300, self.enemy_spawn_rate - 300)
             elif self.difficulty_level <= 10:
@@ -238,41 +238,34 @@ class Game:
             elif self.difficulty_level <= 20:
                 self.enemy_spawn_rate = max(50, self.enemy_spawn_rate - 20)
             else:
-                # Após nível 20, spawna INSTANTANEAMENTE
                 self.enemy_spawn_rate = 50
             
             pygame.time.set_timer(self.enemy_event, self.enemy_spawn_rate)
             
-            # Dano dos inimigos aumenta progressivamente SEM LIMITE
             self.enemy_damage = 1 + self.difficulty_level // 2
-            
-            # Vida dos inimigos aumenta SEM LIMITE
             self.enemy_health = 1 + self.difficulty_level // 2
-            
-            # Velocidade aumenta SEM LIMITE (inimigos ficam super rápidos)
             self.enemy_speed = 100 + (self.difficulty_level * 15)
             
-            # Mensagem de aviso com intensidade progressiva
             if self.difficulty_level <= 5:
                 msg_color = (255, 200, 0)
-                emoji = "⚠️"
+                prefix = "!"
             elif self.difficulty_level <= 10:
                 msg_color = (255, 100, 0)
-                emoji = "🔥"
+                prefix = "!!"
             elif self.difficulty_level <= 20:
                 msg_color = (255, 0, 0)
-                emoji = "💀"
+                prefix = "!!!"
             else:
                 msg_color = (200, 0, 0)
-                emoji = "☠️"
+                prefix = "!!!!"
             
-            self.show_temp_message(f"{emoji} DIFICULDADE {self.difficulty_level}! {emoji}", msg_color)
+            self.show_temp_message(f"{prefix} DIFICULDADE {self.difficulty_level} {prefix}", msg_color)
             print(f"\n{'='*60}")
-            print(f"{'' * min(self.difficulty_level, 30)} DIFICULDADE NÍVEL {self.difficulty_level} {'' * min(self.difficulty_level, 30)}")
-            print(f"   Spawn Rate: {self.enemy_spawn_rate}ms (SPAWNS A CADA {self.enemy_spawn_rate/1000:.2f}s)")
-            print(f"   Dano Inimigo: {self.enemy_damage} ({self.enemy_damage}x inicial)")
-            print(f"   Vida Inimigo: {self.enemy_health} HP")
-            print(f"   Velocidade: {self.enemy_speed} ({(self.enemy_speed/100):.1f}x inicial)")
+            print(f"DIFICULDADE NIVEL {self.difficulty_level}")
+            print(f"   Spawn Rate: {self.enemy_spawn_rate}ms")
+            print(f"   Dano Inimigo: {self.enemy_damage}")
+            print(f"   Vida Inimigo: {self.enemy_health}")
+            print(f"   Velocidade: {self.enemy_speed}")
             print(f"{'='*60}\n")
 
     def setup(self):
@@ -283,7 +276,6 @@ class Game:
         
         self.map = load_pygame(map_path)
         
-        # Carrega camadas do mapa
         for x, y, image in self.map.get_layer_by_name("Ground").tiles():
             Tile((x * TILE_SIZE, y * TILE_SIZE), image, self.all_sprites)
         
@@ -294,7 +286,6 @@ class Game:
         for obj in self.map.get_layer_by_name("Collisions"):
             CollisionSprite((obj.x, obj.y), pygame.Surface((obj.width, obj.height)), self.collision_sprites)
         
-        # Carrega entidades
         player_spawned = False
         try:
             for obj in self.map.get_layer_by_name("Entities"):
@@ -318,57 +309,49 @@ class Game:
         self.map_height = 130 * TILE_SIZE
 
     def spawn_coin(self):
-        """Spawna uma moeda em posição aleatória"""
         x = randint(100, self.map_width - 100)
         y = randint(100, self.map_height - 100)
         coin_value = randint(1, 5)
         Coin(pos=(x, y), value=coin_value, groups=(self.all_sprites, self.coin_sprites))
 
     def spawn_banana(self):
-        """Spawna uma banana em posição aleatória"""
         x = randint(100, self.map_width - 100)
         y = randint(100, self.map_height - 100)
         heal_amount = self.banana_heal_amount
         Banana(pos=(x, y), heal_amount=heal_amount, groups=(self.all_sprites, self.banana_sprites))
 
     def spawn_rock(self):
-        """Spawna uma pedra em posição aleatória"""
         x = randint(100, self.map_width - 100)
         y = randint(100, self.map_height - 100)
         Rock(pos=(x, y), groups=(self.all_sprites, self.rock_sprites))
 
     def collect_coins(self):
-        """Verifica e coleta moedas"""
         for coin in self.coin_sprites:
             if self.player.rect.colliderect(coin.rect):
                 self.score += coin.value
                 coin.kill()
-                self.show_temp_message(f"💰 +{coin.value} moedas!", (255, 215, 0))
+                self.show_temp_message(f"+{coin.value} moedas!", (255, 215, 0))
 
     def collect_bananas(self):
-        """Verifica e coleta bananas para o inventário"""
         for banana in self.banana_sprites:
             if self.player.rect.colliderect(banana.rect):
                 self.banana_inventory += 1
                 banana.kill()
-                self.show_temp_message(f"🍌 Banana coletada! ({self.banana_inventory})", (255, 255, 0))
+                self.show_temp_message(f"Banana coletada! ({self.banana_inventory})", (255, 255, 0))
 
     def collect_rocks(self):
-        """Verifica e coleta pedras"""
         for rock in self.rock_sprites:
             if self.player.rect.colliderect(rock.rect):
                 self.rock_inventory += 1
                 rock.kill()
-                self.show_temp_message(f"🪨 Pedra coletada! ({self.rock_inventory})", (150, 150, 150))
+                self.show_temp_message(f"Pedra coletada! ({self.rock_inventory})", (150, 150, 150))
 
     def show_temp_message(self, message, color=(255, 255, 255)):
-        """Mostra uma mensagem temporária na tela"""
         self.temp_message = message
         self.temp_message_color = color
         self.temp_message_time = pygame.time.get_ticks()
 
     def draw_temp_message(self):
-        """Desenha mensagem temporária se houver uma ativa"""
         if self.temp_message and pygame.time.get_ticks() - self.temp_message_time < self.temp_message_duration:
             msg_surf = self.hud_font.render(self.temp_message, True, self.temp_message_color)
             msg_rect = msg_surf.get_rect(center=(self.window_width // 2, 100))
@@ -380,17 +363,17 @@ class Game:
             self.display_surface.blit(msg_surf, msg_rect)
 
     def draw_hud(self):
-        """Desenha HUD com informações do jogador"""
+        """Desenha HUD com informações do jogador - SEM EMOJIS"""
         # Pontuação
         hud_bg = pygame.Surface((220, 50))
         hud_bg.set_alpha(150)
         hud_bg.fill((0, 0, 0))
         self.display_surface.blit(hud_bg, (10, 10))
         
-        score_text = self.hud_font.render(f"💰 {self.score}", True, "gold")
+        score_text = self.hud_font.render(f"$ {self.score}", True, "gold")
         self.display_surface.blit(score_text, (20, 15))
         
-        # XP e Level (SEM LIMITE)
+        # XP e Level
         xp_bg = pygame.Surface((220, 60))
         xp_bg.set_alpha(150)
         xp_bg.fill((0, 0, 0))
@@ -403,16 +386,19 @@ class Game:
         self.display_surface.blit(xp_text, (20, 100))
         
         # Vida com barra visual
-        health_bg = pygame.Surface((220, 50))
+        health_bg = pygame.Surface((220, 70))
         health_bg.set_alpha(150)
         health_bg.fill((0, 0, 0))
         self.display_surface.blit(health_bg, (10, 140))
+        
+        hp_label = self.ui_font.render("HP", True, "white")
+        self.display_surface.blit(hp_label, (20, 145))
         
         # Barra de vida
         bar_width = 180
         bar_height = 20
         bar_x = 20
-        bar_y = 150
+        bar_y = 170
         
         pygame.draw.rect(self.display_surface, (100, 0, 0), (bar_x, bar_y, bar_width, bar_height))
         
@@ -436,65 +422,80 @@ class Game:
         banana_bg = pygame.Surface((220, 50))
         banana_bg.set_alpha(150)
         banana_bg.fill((0, 0, 0))
-        self.display_surface.blit(banana_bg, (10, 200))
+        self.display_surface.blit(banana_bg, (10, 220))
         
-        banana_text = self.hud_font.render(f"🍌 x{self.banana_inventory}", True, (255, 255, 0))
-        self.display_surface.blit(banana_text, (20, 205))
+        banana_text = self.hud_font.render(f"BANANA x{self.banana_inventory}", True, (255, 255, 0))
+        self.display_surface.blit(banana_text, (20, 225))
         
         hint_text = self.ui_font.render("(H para usar)", True, (200, 200, 200))
-        self.display_surface.blit(hint_text, (120, 212))
+        self.display_surface.blit(hint_text, (20, 250))
         
         # INVENTÁRIO DE PEDRAS
         rock_bg = pygame.Surface((220, 50))
         rock_bg.set_alpha(150)
         rock_bg.fill((0, 0, 0))
-        self.display_surface.blit(rock_bg, (10, 260))
+        self.display_surface.blit(rock_bg, (10, 280))
         
-        rock_text = self.hud_font.render(f"🪨 x{self.rock_inventory}", True, (150, 150, 150))
-        self.display_surface.blit(rock_text, (20, 265))
+        rock_text = self.hud_font.render(f"PEDRA x{self.rock_inventory}", True, (150, 150, 150))
+        self.display_surface.blit(rock_text, (20, 285))
         
-        rock_hint = self.ui_font.render("(Munição)", True, (200, 200, 200))
-        self.display_surface.blit(rock_hint, (120, 272))
+        rock_hint = self.ui_font.render("(Municao)", True, (200, 200, 200))
+        self.display_surface.blit(rock_hint, (20, 310))
         
         # Indicador de cooldown do soco
         if not self.can_punch:
             cooldown_percent = (pygame.time.get_ticks() - self.punch_time) / self.punch_cooldown
+            
+            # Barra de cooldown
+            cooldown_bg = pygame.Surface((100, 40))
+            cooldown_bg.set_alpha(150)
+            cooldown_bg.fill((0, 0, 0))
+            self.display_surface.blit(cooldown_bg, (self.window_width - 120, 10))
+            
+            punch_label = self.ui_font.render("SOCO", True, (255, 200, 0))
+            self.display_surface.blit(punch_label, (self.window_width - 110, 15))
+            
             cooldown_surf = pygame.Surface((80, 10))
             cooldown_surf.fill((50, 50, 50))
             pygame.draw.rect(cooldown_surf, (255, 200, 0), (0, 0, int(80 * cooldown_percent), 10))
             
-            self.display_surface.blit(cooldown_surf, (self.window_width - 100, 20))
-            
-            cooldown_text = self.ui_font.render("👊", True, (255, 200, 0))
-            self.display_surface.blit(cooldown_text, (self.window_width - 130, 10))
+            self.display_surface.blit(cooldown_surf, (self.window_width - 110, 35))
         
-        # Indicador de dificuldade (cores mais intensas)
-        diff_bg = pygame.Surface((220, 60))
+        # Indicador de dificuldade
+        diff_bg = pygame.Surface((220, 80))
         diff_bg.set_alpha(150)
         diff_bg.fill((0, 0, 0))
-        self.display_surface.blit(diff_bg, (self.window_width - 240, 50))
+        self.display_surface.blit(diff_bg, (self.window_width - 240, 60))
         
-        # Cor baseada no nível (fica mais vermelho)
+        # Cor baseada no nível
         if self.difficulty_level < 3:
             diff_color = (255, 255, 255)
+            label = "FACIL"
         elif self.difficulty_level < 5:
             diff_color = (255, 255, 0)
+            label = "MEDIO"
         elif self.difficulty_level < 8:
             diff_color = (255, 150, 0)
+            label = "DIFICIL"
         elif self.difficulty_level < 12:
             diff_color = (255, 50, 0)
+            label = "INTENSO"
         elif self.difficulty_level < 20:
             diff_color = (255, 0, 0)
+            label = "EXTREMO"
         else:
-            # IMPOSSÍVEL - vermelho pulsante
             pulse = (pygame.time.get_ticks() // 200) % 2
             diff_color = (255, 0, 0) if pulse else (150, 0, 0)
+            label = "IMPOSSIVEL"
         
-        diff_text = self.ui_font.render(f"🔥 Dif: {self.difficulty_level}", True, diff_color)
-        self.display_surface.blit(diff_text, (self.window_width - 230, 55))
+        diff_label_text = self.ui_font.render(label, True, diff_color)
+        self.display_surface.blit(diff_label_text, (self.window_width - 230, 65))
         
-        time_text = self.ui_font.render(f"⏱️ {int(self.game_time)}s", True, (200, 200, 200))
-        self.display_surface.blit(time_text, (self.window_width - 230, 80))
+        diff_text = self.ui_font.render(f"Nivel: {self.difficulty_level}", True, diff_color)
+        self.display_surface.blit(diff_text, (self.window_width - 230, 90))
+        
+        time_text = self.ui_font.render(f"Tempo: {int(self.game_time)}s", True, (200, 200, 200))
+        self.display_surface.blit(time_text, (self.window_width - 230, 115))
 
     def draw_attribute_menu(self):
         """Menu de atributos com sistema de pontos de skill"""
@@ -515,10 +516,9 @@ class Game:
         title_rect = title_surf.get_rect(midtop=(menu_rect.centerx, menu_rect.top + padding))
         self.display_surface.blit(title_surf, title_rect)
 
-        # Pontos disponíveis
         y_offset = title_rect.bottom + 15
         points_color = (0, 255, 0) if self.attribute_points > 0 else (150, 150, 150)
-        points_surf = self.ui_font.render(f"Pontos Disponíveis: {self.attribute_points}", True, points_color)
+        points_surf = self.ui_font.render(f"Pontos Disponiveis: {self.attribute_points}", True, points_color)
         points_rect = points_surf.get_rect(centerx=menu_rect.centerx, top=y_offset)
         self.display_surface.blit(points_surf, points_rect)
         
@@ -533,21 +533,21 @@ class Game:
                 'current': self.player.damage,
                 'key': 'attack',
                 'color': (255, 100, 100),
-                'icon': '⚔️'
+                'icon': '[ATK]'
             },
             {
                 'name': '2. Health Max',
                 'current': self.player.health,
                 'key': 'health',
                 'color': (100, 255, 100),
-                'icon': '❤️'
+                'icon': '[HP]'
             },
             {
                 'name': '3. Speed',
                 'current': int(self.player.speed),
                 'key': 'speed',
                 'color': (100, 150, 255),
-                'icon': '⚡'
+                'icon': '[SPD]'
             }
         ]
         
@@ -600,10 +600,10 @@ class Game:
         
         y_offset += 5
         if self.attribute_points > 0:
-            inst_text = "Clique nos botões ou pressione 1, 2 ou 3"
+            inst_text = "Clique nos botoes ou pressione 1, 2 ou 3"
             inst_color = (255, 255, 100)
         else:
-            inst_text = "Suba de nível para ganhar pontos!"
+            inst_text = "Suba de nivel para ganhar pontos!"
             inst_color = (150, 150, 150)
         
         inst_surf = pygame.font.Font(None, 22).render(inst_text, True, inst_color)
@@ -625,22 +625,21 @@ class Game:
         game_over_rect = game_over_surf.get_rect(center=(self.window_width/2, self.window_height/2 - 100))
         self.display_surface.blit(game_over_surf, game_over_rect)
         
-        # Estatísticas finais
         stats_font = pygame.font.Font(None, 35)
         
-        score_surf = stats_font.render(f"💰 Moedas: {self.score}", True, "gold")
+        score_surf = stats_font.render(f"Moedas: {self.score}", True, "gold")
         score_rect = score_surf.get_rect(center=(self.window_width/2, self.window_height/2 - 40))
         self.display_surface.blit(score_surf, score_rect)
         
-        level_surf = stats_font.render(f"🎯 Level: {self.player.level}", True, "cyan")
+        level_surf = stats_font.render(f"Level: {self.player.level}", True, "cyan")
         level_rect = level_surf.get_rect(center=(self.window_width/2, self.window_height/2 - 5))
         self.display_surface.blit(level_surf, level_rect)
         
-        time_surf = stats_font.render(f"⏱️ Sobreviveu: {int(self.game_time)}s", True, "white")
+        time_surf = stats_font.render(f"Sobreviveu: {int(self.game_time)}s", True, "white")
         time_rect = time_surf.get_rect(center=(self.window_width/2, self.window_height/2 + 30))
         self.display_surface.blit(time_surf, time_rect)
         
-        diff_surf = stats_font.render(f"🔥 Dificuldade Final: {self.difficulty_level}", True, "red")
+        diff_surf = stats_font.render(f"Dificuldade Final: {self.difficulty_level}", True, "red")
         diff_rect = diff_surf.get_rect(center=(self.window_width/2, self.window_height/2 + 65))
         self.display_surface.blit(diff_surf, diff_rect)
 
@@ -649,7 +648,6 @@ class Game:
         self.display_surface.blit(restart_surf, restart_rect)
     
     def bullet_collision(self):
-        """Verifica colisões de balas"""
         hits = pygame.sprite.groupcollide(self.bullet_sprites, self.enemy_sprites, True, False)
         for bullet, enemies_hit in hits.items():
             for enemy in enemies_hit:
@@ -665,7 +663,6 @@ class Game:
                     break
     
     def punch_collision(self):
-        """Verifica colisões do soco com inimigos"""
         for punch in self.punch_sprites:
             hits = pygame.sprite.spritecollide(punch, self.enemy_sprites, False)
             for enemy in hits:
@@ -683,7 +680,6 @@ class Game:
                         enemy.kill()
     
     def drop_xp(self, position, xp_amount=1):
-        """Dropa XP na posição especificada"""
         XP(
             pos=position,
             xp_value=xp_amount,
@@ -692,7 +688,6 @@ class Game:
         )
     
     def collect_items(self):
-        """Coleta XP - SEM LIMITE DE LEVEL"""
         if self.player.current_health <= 0:
             return
         
@@ -701,23 +696,20 @@ class Game:
             if isinstance(item, XP):
                 try:
                     xp_gained = item.collect()
-                    # REMOVIDO O LIMITE DE LEVEL 5
                     self.player.current_xp += xp_gained
                     
                     if self.player.current_xp >= self.player.next_level_up:
                         self.player.level += 1
                         self.player.current_xp = 0
                         
-                        # XP necessário aumenta progressivamente
                         self.player.next_level_up = 10 + (self.player.level * 10)
                         
                         self.attribute_points += 1
-                        self.show_temp_message(f"🎉 LEVEL {self.player.level}! +1 Ponto", (0, 255, 255))
+                        self.show_temp_message(f"LEVEL UP! {self.player.level} - +1 Ponto", (0, 255, 255))
                 except Exception as e:
                     print(f"Erro ao coletar XP: {e}")
 
     def reset_game(self):
-        """Reseta o jogo"""
         self.attribute_points = 0
         self.enemy_sprites.empty()
         self.bullet_sprites.empty()
@@ -747,7 +739,6 @@ class Game:
         self.game_over = False
         self.temp_message = ""
         
-        # Reseta dificuldade
         self.game_time = 0
         self.difficulty_level = 1
         self.last_difficulty_increase = 0
@@ -757,31 +748,29 @@ class Game:
         self.enemy_speed = 100
         pygame.time.set_timer(self.enemy_event, self.enemy_spawn_rate)
         
-        print("✅ Jogo resetado!")
+        print("Jogo resetado!")
     
     def apply_attribute_upgrade(self, upgrade_key):
-        """Aplica upgrade de atributo usando 1 ponto"""
         if self.attribute_points <= 0:
-            self.show_temp_message("Sem pontos disponíveis!", (255, 100, 100))
+            self.show_temp_message("Sem pontos disponiveis!", (255, 100, 100))
             return
         
         self.attribute_points -= 1
         
         if upgrade_key == 'attack':
             self.player.damage += 1
-            self.show_temp_message("⚔️ Attack +1!", (255, 100, 100))
+            self.show_temp_message("Attack +1!", (255, 100, 100))
             
         elif upgrade_key == 'health':
             self.player.health += 5
             self.player.current_health += 5
-            self.show_temp_message("❤️ Health +5!", (100, 255, 100))
+            self.show_temp_message("Health +5!", (100, 255, 100))
             
         elif upgrade_key == 'speed':
             self.player.speed += 10
-            self.show_temp_message("⚡ Speed +10!", (100, 150, 255))
+            self.show_temp_message("Speed +10!", (100, 150, 255))
 
     def run(self):
-        """Loop principal do jogo"""
         while self.running:
             dt = self.clock.tick(60) / 1000
 
@@ -838,14 +827,14 @@ class Game:
                                 
                                 if item == 'banana':
                                     self.banana_inventory += 1
-                                    self.show_temp_message("🍌 Banana comprada!", (255, 255, 0))
+                                    self.show_temp_message("Banana comprada!", (255, 255, 0))
                                 
                                 elif item == 'rock':
                                     self.rock_inventory += 1
-                                    self.show_temp_message("🪨 Pedra comprada!", (150, 150, 150))
+                                    self.show_temp_message("Pedra comprada!", (150, 150, 150))
                             
                             elif item and not success:
-                                self.show_temp_message("❌ Moedas insuficientes!", (255, 100, 100))
+                                self.show_temp_message("Moedas insuficientes!", (255, 100, 100))
 
                     if event.type == self.enemy_event and not self.game_over:
                         if self.spawn_positions:
@@ -856,7 +845,6 @@ class Game:
                                 player=self.player,
                                 collision_sprites=self.collision_sprites
                             )
-                            # Aplica dificuldade ao inimigo
                             enemy.health = self.enemy_health
                             enemy.damage = self.enemy_damage
                             enemy.speed = self.enemy_speed
