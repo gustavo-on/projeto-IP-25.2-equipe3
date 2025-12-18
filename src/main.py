@@ -63,6 +63,7 @@ class Game:
             mira_path = os.path.join(BASE_DIR, "..", "assets", "images", "mira.png")
             self.mira = Crosshair(mira_path)
         except:
+            print("Imagem da mira não encontrada.")
             self.mira = None
         
         self.setup()
@@ -224,6 +225,7 @@ class Game:
             if obj.image is not None:
                 CollisionSprite((obj.x, obj.y), obj.image, (self.all_sprites, self.collision_sprites))
             else:
+                print(f"⚠️ Objeto sem imagem ignorado em ({obj.x}, {obj.y})")
         
         for obj in self.map.get_layer_by_name("Collisions"):
             CollisionSprite((obj.x, obj.y), pygame.Surface((obj.width, obj.height)), self.collision_sprites)
@@ -239,6 +241,7 @@ class Game:
                 else:
                     self.spawn_positions.append((obj.x, obj.y))
         except Exception as e:
+            print(f"Erro ao carregar Entities: {e}")
 
         if not player_spawned:
             self.player.rect.center = (600, 400)
@@ -277,6 +280,7 @@ class Game:
                 self.score += coin.value
                 coin.kill()
                 self.show_temp_message(f"💰 +{coin.value} moedas!", (255, 215, 0))
+                print(f"💰 +{coin.value} moedas! Total: {self.score}")
 
     def collect_bananas(self):
         """Verifica e coleta bananas para o inventário"""
@@ -286,6 +290,7 @@ class Game:
                 banana.kill()
                 
                 self.show_temp_message(f"🍌 Banana coletada! ({self.banana_inventory})", (255, 255, 0))
+                print(f"🍌 Banana coletada! Inventário: {self.banana_inventory}")
 
     def collect_rocks(self):
         """Verifica e coleta pedras"""
@@ -295,6 +300,7 @@ class Game:
                 rock.kill()
                 
                 self.show_temp_message(f"🪨 Pedra coletada! ({self.rock_inventory})", (150, 150, 150))
+                print(f"🪨 Pedra coletada! Inventário: {self.rock_inventory}")
 
     def show_temp_message(self, message, color=(255, 255, 255)):
         """Mostra uma mensagem temporária na tela"""
@@ -597,6 +603,7 @@ class Game:
                         self.drop_xp(enemy.rect.center, xp_amount=5)
                         enemy.kill()
                     
+                    print(f"💥 Soco acertou! Dano: {punch.damage}")
     
     def drop_xp(self, position, xp_amount=1):
         """Dropa XP na posição especificada"""
@@ -619,6 +626,7 @@ class Game:
                     xp_gained = item.collect()
                     if self.player.level < 5:
                         self.player.current_xp += xp_gained
+                        print(f"✨ +{xp_gained} XP! ({self.player.current_xp}/{self.player.next_level_up})")
                     
                     # Level up
                         if self.player.current_xp >= self.player.next_level_up:
@@ -633,10 +641,13 @@ class Game:
                                 self.player.next_level_up = 40
                             elif self.player.level >= 5:
                                 self.player.next_level_up = 9999
+                                print("Nível Máximo Alcançado")
 
                             self.attribute_points += 1
                             self.show_temp_message(f"🎉 LEVEL {self.player.level}! +1 Ponto", (0, 255, 255))
+                            print(f"🎉 LEVEL UP! Level {self.player.level}! Ganhou 1 ponto de atributo")
                 except Exception as e:
+                    print(f"Erro ao coletar XP: {e}")
 
     def reset_game(self):
         """Reseta o jogo"""
@@ -672,6 +683,7 @@ class Game:
         self.rock_inventory = 3
         self.game_over = False
         self.temp_message = ""
+        print("✅ Jogo resetado!")
     
     def apply_attribute_upgrade(self, upgrade_key):
         """Aplica upgrade de atributo usando 1 ponto"""
@@ -684,16 +696,20 @@ class Game:
         if upgrade_key == 'attack':
             self.player.damage += 1
             self.show_temp_message("⚔️ Attack +1!", (255, 100, 100))
+            print(f"[UPGRADE] Attack aumentado para {self.player.damage}")
             
         elif upgrade_key == 'health':
             self.player.health += 5
             self.player.current_health += 5
             self.show_temp_message("❤️ Health +5!", (100, 255, 100))
+            print(f"[UPGRADE] Health aumentado para {self.player.health}")
             
         elif upgrade_key == 'speed':
             self.player.speed += 10
             self.show_temp_message("⚡ Speed +10!", (100, 150, 255))
+            print(f"[UPGRADE] Speed aumentado para {self.player.speed}")
         
+        print(f"Pontos restantes: {self.attribute_points}")
 
     def run(self):
         """Loop principal do jogo"""
@@ -711,6 +727,7 @@ class Game:
                     if result == "start_game":
                         self.game_state = "playing"
                         pygame.mouse.set_visible(False)
+                        print("Jogo iniciado!")
                     elif result == "quit":
                         self.running = False
 
@@ -728,6 +745,7 @@ class Game:
                         if event.key == pygame.K_l:
                             self.show_store = not self.show_store
                             pygame.mouse.set_visible(self.show_store)
+                            print(f"Loja {'aberta' if self.show_store else 'fechada'}")
                         if event.key == pygame.K_m:
                             self.show_attributes = not self.show_attributes
                             pygame.mouse.set_visible(self.show_attributes)
@@ -764,14 +782,17 @@ class Game:
                                 if item == 'banana':
                                     self.banana_inventory += 1
                                     self.show_temp_message("🍌 Banana comprada!", (255, 255, 0))
+                                    print(f"🛒 Comprou BANANA! Moedas: {self.score}")
                                 
                                 elif item == 'rock':
                                     self.rock_inventory += 1
                                     self.show_temp_message("🪨 Pedra comprada!", (150, 150, 150))
+                                    print(f"🛒 Comprou PEDRA! Moedas: {self.score}")
                             
                             elif item and not success:
                                 # Tentou comprar sem moedas
                                 self.show_temp_message("❌ Moedas insuficientes!", (255, 100, 100))
+                                print(f"❌ Sem moedas! Você tem {self.score}, precisa de 4")
 
                     # Spawns
                     if event.type == self.enemy_event and not self.game_over:
@@ -837,6 +858,7 @@ class Game:
 
                                 if self.player.current_health <= 0:
                                     self.game_over = True
+                                    print("💀 GAME OVER!")
                                 break
 
                 # Renderização
