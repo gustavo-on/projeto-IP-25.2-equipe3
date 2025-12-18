@@ -6,7 +6,7 @@ from pytmx.util_pygame import load_pygame
 from player import Player
 from allsprites import CameraGroups, TelaInicial
 from sprite import Tile
-from collision import CollisionSprite, Bullet
+from collision import CollisionSprite, Bullet, Punch
 from aim import Crosshair
 from enemies import Enemy
 from coletaveis import XP, Coin, Banana, Rock
@@ -33,6 +33,7 @@ class Game:
         self.all_sprites = CameraGroups()
         self.collision_sprites = pygame.sprite.Group()
         self.bullet_sprites = pygame.sprite.Group()
+        self.punch_sprites = pygame.sprite.Group()
         self.enemy_sprites = pygame.sprite.Group()
         self.collectible_sprites = pygame.sprite.Group()
         self.coin_sprites = pygame.sprite.Group()
@@ -68,6 +69,11 @@ class Game:
         self.can_shoot = True
         self.shoot_time = 0
         self.gun_cooldown = 200
+        
+        # Sistema de soco
+        self.can_punch = True
+        self.punch_time = 0
+        self.punch_cooldown = 500
         
         # Sistema de invencibilidade
         self.player_invincible = False
@@ -136,6 +142,26 @@ class Game:
                     self.show_temp_message("❌ Colete pedras para atirar!", (255, 100, 100))
                     self._last_no_rock_msg = pygame.time.get_ticks()
     
+    def input_punch(self):
+        """Detecta clique direito para soco"""
+        if pygame.mouse.get_pressed()[2] and self.can_punch and not self.game_over:
+            mouse_pos = pygame.Vector2(pygame.mouse.get_pos())
+            player_pos = pygame.Vector2(self.player.rect.center)
+            player_screen_pos = player_pos + self.all_sprites.offset
+            direction = (mouse_pos - player_screen_pos).normalize()
+
+            Punch(
+                pos=self.player.rect.center,
+                direction=direction,
+                damage=self.player.damage * 2,
+                groups=(self.all_sprites, self.punch_sprites)
+            )
+            
+            self.can_punch = False
+            self.punch_time = pygame.time.get_ticks()
+            
+            print(f"👊 SOCO! Dano: {self.player.damage * 2}")
+    
     def use_banana(self):
         """Usa uma banana do inventário para curar"""
         if self.banana_inventory > 0 and self.player.current_health < self.player.health:
@@ -161,6 +187,12 @@ class Game:
         if not self.can_shoot:
             if pygame.time.get_ticks() - self.shoot_time >= self.gun_cooldown:
                 self.can_shoot = True
+    
+    def punch_timer(self):
+        """Gerencia cooldown do soco"""
+        if not self.can_punch:
+            if pygame.time.get_ticks() - self.punch_time >= self.punch_cooldown:
+                self.can_punch = True
     
     def invincibility_timer(self):
         if self.player_invincible:
@@ -362,6 +394,18 @@ class Game:
         
         rock_hint = self.ui_font.render("(Munição)", True, (200, 200, 200))
         self.display_surface.blit(rock_hint, (120, 272))
+        
+        # Indicador de cooldown do soco
+        if not self.can_punch:
+            cooldown_percent = (pygame.time.get_ticks() - self.punch_time) / self.punch_cooldown
+            cooldown_surf = pygame.Surface((80, 10))
+            cooldown_surf.fill((50, 50, 50))
+            pygame.draw.rect(cooldown_surf, (255, 200, 0), (0, 0, int(80 * cooldown_percent), 10))
+            
+            self.display_surface.blit(cooldown_surf, (self.window_width - 100, 20))
+            
+            cooldown_text = self.ui_font.render("👊", True, (255, 200, 0))
+            self.display_surface.blit(cooldown_text, (self.window_width - 130, 10))
 
     def draw_attribute_menu(self):
         """Menu de atributos com sistema de pontos de skill"""
@@ -530,6 +574,28 @@ class Game:
                     bullet.kill()
                     break
     
+    def punch_collision(self):
+        """Verifica colisões do soco com inimigos"""
+        for punch in self.punch_sprites:
+            hits = pygame.sprite.spritecollide(punch, self.enemy_sprites, False)
+            for enemy in hits:
+                # Evita atingir o mesmo inimigo múltiplas vezes com o mesmo soco
+                if enemy not in punch.hit_enemies:
+                    enemy.health -= punch.damage
+                    punch.hit_enemies.add(enemy)
+                    
+                    # Efeito de knockback maior no soco
+                    enemy_pos = pygame.Vector2(enemy.rect.center)
+                    punch_pos = pygame.Vector2(punch.rect.center)
+                    knockback = (enemy_pos - punch_pos).normalize() * 30
+                    enemy.rect.center += knockback
+                    
+                    if enemy.health <= 0:
+                        self.drop_xp(enemy.rect.center, xp_amount=5)
+                        enemy.kill()
+                    
+                    print(f"💥 Soco acertou! Dano: {punch.damage}")
+    
     def drop_xp(self, position, xp_amount=1):
         """Dropa XP na posição especificada"""
         XP(
@@ -580,6 +646,7 @@ class Game:
         self.attribute_points = 0
         self.enemy_sprites.empty()
         self.bullet_sprites.empty()
+        self.punch_sprites.empty()
         self.collectible_sprites.empty()
         self.coin_sprites.empty()
         self.banana_sprites.empty()
@@ -587,7 +654,7 @@ class Game:
         
         # Remove sprites
         for sprite in list(self.all_sprites):
-            if isinstance(sprite, (Enemy, Bullet, XP, Coin, Banana, Rock)):
+            if isinstance(sprite, (Enemy, Bullet, Punch, XP, Coin, Banana, Rock)):
                 sprite.kill()
         
         # Reseta player
@@ -724,13 +791,16 @@ class Game:
                 # Atualização da lógica
                 if not self.game_over and not self.show_attributes:
                     self.gun_timer()
+                    self.punch_timer()
                     self.invincibility_timer()
                     self.input()
+                    self.input_punch()
                     if self.mira:
                         self.mira.update()
 
                     self.all_sprites.update(dt)
                     self.bullet_collision()
+                    self.punch_collision()
                     self.collect_items()
                     self.collect_coins()
                     self.collect_bananas()
@@ -764,6 +834,11 @@ class Game:
                     if not self.player_invincible or (pygame.time.get_ticks() // 100) % 2:
                         player_screen_pos = self.player.rect.topleft + self.all_sprites.offset
                         self.display_surface.blit(self.player.image, player_screen_pos)
+                
+                # Desenha socos
+                for punch in self.punch_sprites:
+                    punch_screen_pos = punch.rect.topleft + self.all_sprites.offset
+                    self.display_surface.blit(punch.image, punch_screen_pos)
 
                 if self.mira and not self.game_over:
                     self.mira.draw(self.display_surface)
