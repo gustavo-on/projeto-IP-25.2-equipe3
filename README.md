@@ -6,23 +6,23 @@ Projeto da disciplina de Introdução à Programação 2025.2 (CC/IA) - UFPE
 
 # 2. Equipe e suas atribuições:
   -Allan Fernandes de Lucena afl4
-    -Responsávelpor parte do código referente ao ataque especial, aos atributos, disparo , tela inicial e tela de gameover para iniciar e encerrar o jogo. Dos coletáveis, elaborou a parte do XP.
+    -Responsável por parte do código referente ao ataque especial, aos atributos, disparo , tela inicial e tela de gameover para iniciar e encerrar o jogo. Dos coletáveis, elaborou a parte do XP.
   
   -Gustavo Nascimento de Oliveira - gno -
-    -Responsável pela gestão de tarefas, por alguns sprites utilizados no jogo e do relatório.
+    -Responsável pela gestão de tarefas, por alguns sprites utilizados no jogo e do relatório no github.
   
   -Kaio Vinicius Pereira Moura - kvpm -
     -Responsável pela elaboração dos slides e de alguns sprites utilizados no jogo.
 
   -Marcos Antônio de Oliveira Neto - maon -
-    -Responsávelpor parte do código referente a camêra que segue o jogador, Spawn de inimigos, colisão. Dos coletáveis, elaborou a parte das bananas, das moedas e da pedra.
+    -Responsável por parte do código referente a camêra que segue o jogador, Spawn de inimigos, colisão. Dos coletáveis, elaborou a parte das bananas, das moedas e da pedra.
   
   -Matheus Miranda Borges dos Santos - mmbs2 -
-    -Responsável pela elaboração do do mapa e do relatório 
+    -Responsável pela elaboração do do mapa a partyir da ferramenta tiledmap e do relatório no github. 
   
 # 3. Sobre o Jogo:
   3.1 História:
-    - Um Gorila, filósofo, que incentiva seus seguidores com a sua frase mais inspiradora "Apenas comece" que vem dá filosofia mais refinada, estava a viver a sua vida em paz. Entretanto, ele é capturado por um grupo de calouros do CIN para enfrentar um desafio: Derrotar os (CIN)homens enquanto percorre um trajeto tortuoso em busca de amadurecimento(XP), alimento(banana) e moedas, é claro!
+    - Um Gorila, filósofo, que incentiva seus seguidores com a sua frase mais inspiradora "Apenas comece" que vem dá filosofia mais refinada, estava a viver a sua vida em paz. Entretanto, ele é capturado por um grupo de calouros do CIN para enfrentar um desafio: Derrotar os (CIN)homens enquanto percorre um trajeto tortuoso em busca de amadurecimento(XP), alimento(banana), pedras e moedas, é claro!
 
   3.2 Personagens:
     -Gorila filósofo(personagem principal e jogável)
@@ -49,7 +49,7 @@ Projeto da disciplina de Introdução à Programação 2025.2 (CC/IA) - UFPE
 # 6. Ferramentas, bibliotecas, frameworks:
   -Ferramentas utilizadas:
   
-    -Pygame(Biblioteca usada para o desenvolvimento de jogos 2D na linguagem Python - (Linguagem utilizda durante a cadeira de Introdução à Programação 2025.2 (CC/IA) - UFPE)
+    -Pygame-ce(Biblioteca usada para o desenvolvimento de jogos 2D na linguagem Python - (Linguagem utilizda durante a cadeira de Introdução à Programação 2025.2 (CC/IA) - UFPE)
 
     -Vscode(Editor de código (utilisado para escrever, depurar e testar código em diversas linguagens-nesse projeto a linguagem de programação uitlizada foi Python), introduzido e utilizado durante a cadeira de Introdução à Programação 2025.2 (CC/IA) - UFPE)
     
@@ -74,28 +74,44 @@ Projeto da disciplina de Introdução à Programação 2025.2 (CC/IA) - UFPE
 # 7. Como jogar:
 
   -Movimento: 
+    
+    -Tecla Enter(inicia o jogo)
   
     -Tecla W(Move para cima)
     
     -Tecla A(Move para a esquerda)
     
-    -tecla S(Move para baixo)
+    -Tecla S(Move para baixo)
     
     -Tecla D(Move para a Direita)
     
   -Disparo:
 
-    -Botão esquerdo do Mouse(Disparo de projéteis)
+    -Botão esquerdo do Mouse(Disparo de projéteis-pedras)
+    -Botão direito do Mouse(Dispara um ataque do tipo soco)
+    
+  -Outras teclas para o jogo:
+  
+    -Tecla H(para curar)
+
+    -Tecla L(para abrir a loja)
+
+    -Tecla M(para abrir o menu skills)
+
+    -Tecla E(para usaro especial)
     
 # 8. Os conceitos que foram apresentados durante a disciplina e utilizados no projeto (indicando onde foram usados):
+
   -Estruturas condicionais: Controlam a resposta dada caso uma condição seja verdadira. Exemplo: Caso o jogador acione a tecla W o personagem principal andará para cima.
+  
   -Programação orientada a Objetos: Uma forma de elaboração do código do jogo, com classes, atributos e métodos.
+  
   -Funções: Um agrupamento de um bloco de código que pode ser utilizado em diversas partes do código.
   
 # 9. Desafios, erros e aprendizados:
   -Qual foi o maior erro cometido durante o projeto? Como vocês lidaram com ele?
   
-    -Tempo escasso se revelou um problema que acometeu vários aspectos da realização do projeto, mas com afinco foi possível superar algumas dessas questões realcionadas ao tempo curto. dentre esses aspectos, encontramos uma dificuldade na hora de importar o mapa
+    -Tempo escasso se revelou um problema que acometeu vários aspectos da realização do projeto, mas com afinco foi possível superar algumas dessas questões realcionadas ao tempo curto. Dentre esses aspectos, encontramos uma dificuldade na hora de importar o mapa, mas essa dificuldade foi contornada após alguns ciclos de tentativa e erro.
     
   -Qual foi o maior desafio enfrentado durante o projeto? Como vocês lidaram com ele?
   
@@ -103,6 +119,6 @@ Projeto da disciplina de Introdução à Programação 2025.2 (CC/IA) - UFPE
 
   -Quais as lições aprendidas durante o projeto?
   
-    - O trabalho colaborativo, atrelado a uma comunicação dinâmica(por meio de aplicativos), foi essencial para a realização do projeto, a pesar das dificuldades encontradas com o tempo escasso. Atrelado a isso, o uso de ferramentas como o GIT e GitHub nos proporcionaram uma visão do trabalho colaborativo em um projeto de multiplas contribuições. A importância do trabalho em equipe ficou evidente na elaboração do projeto, com os membros se colocando a disposição para auxiiar, uns aos outros, durante as atividades e as demandas, ou dificuldades, que foram surgindo ao longo do projeto.
+    - O trabalho colaborativo, atrelado a uma comunicação dinâmica(por meio de aplicativos), foi essencial para a realização do projeto, apesar das dificuldades encontradas com o tempo escasso. Atrelado a isso, o uso de ferramentas como o GIT e GitHub nos proporcionaram uma visão do trabalho colaborativo em um projeto de multiplas contribuições. A importância do trabalho em equipe ficou evidente na elaboração do projeto, com os membros se colocando a disposição para auxiiar, uns aos outros, durante as atividades e as demandas, ou dificuldades, que foram surgindo ao longo do projeto. A importancia da gestão do tempo também se mostrou como algo essencial para uma boa realização de um projeto como esse.
 
   
