@@ -782,7 +782,7 @@ class Game:
         self.player.current_xp = 0
         self.player.level = 1
         self.player.next_level_up = 10
-        self.player.damage = 2
+        self.player.damage = 1
         self.player.speed = 300
         self.player.rect.center = self.player_start_pos
         

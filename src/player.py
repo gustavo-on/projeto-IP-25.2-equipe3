@@ -22,7 +22,7 @@ class Player(Entity):
         # Status
         self.health = 10
         self.current_health = 10
-        self.damage = 5
+        self.damage = 2
         
         # Sistema de Level
         self.level = 1
