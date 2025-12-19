@@ -30,6 +30,12 @@ class Player(Entity):
         self.direction = pygame.Vector2(0, 0)
         self.speed = 300
 
+        self.special_cooldown = 10000  # 10 segundos
+        self.can_use_special = True
+        self.last_special_time = 0
+        self.special_damage = 10  # Dano do especial
+        self.special_range = 200 
+
     def input(self):
         keys = pygame.key.get_pressed()
         

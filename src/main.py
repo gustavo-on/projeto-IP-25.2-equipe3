@@ -123,6 +123,15 @@ class Game:
         self.game_state = "menu"
         self.menu = TelaInicial(self.display_surface, self.window_width, self.window_height)
         self.game_over_screen = TelaGameOver(self.display_surface, self.window_width, self.window_height)
+
+        self.screen_shake = 0
+        self.screen_shake_intensity = 0
+        
+        # ✅ NOVO: Efeito visual do especial
+        self.special_effect_active = False
+        self.special_effect_time = 0
+        self.special_effect_duration = 500
+        self.can_use_special = True
     
     def load_images(self):
         try:
@@ -133,6 +142,100 @@ class Game:
             self.bullet_surf = pygame.Surface((10, 10))
             self.bullet_surf.fill("red")
     
+    def apply_screen_shake(self):
+        """Aplica vibração na tela"""
+        if self.screen_shake > 0:
+            import random
+            shake_x = random.randint(-self.screen_shake_intensity, self.screen_shake_intensity)
+            shake_y = random.randint(-self.screen_shake_intensity, self.screen_shake_intensity)
+            
+            # Aplica o shake no offset da câmera
+            self.all_sprites.offset.x += shake_x
+            self.all_sprites.offset.y += shake_y
+            
+            # Diminui o shake gradualmente
+            self.screen_shake -= 1
+    
+    def use_special_attack(self):
+        """Ataque especial com área de efeito"""
+        current_time = pygame.time.get_ticks()
+        
+        # Verifica cooldown
+        if not self.can_use_special:
+            remaining = (self.player.special_cooldown - (current_time - self.player.last_special_time)) // 1000
+            self.show_temp_message(f"Especial em cooldown! {remaining}s", (255, 100, 100))
+            return
+        
+        # Ativa o ataque especial
+        self.can_use_special = False
+        self.player.last_special_time = current_time
+        
+        # ✅ SCREEN SHAKE
+        self.screen_shake = 25  # Duração do shake
+        self.screen_shake_intensity = 30  # Intensidade
+        
+        # ✅ Efeito visual
+        self.special_effect_active = True
+        self.special_effect_time = current_time
+        
+        # ✅ Dano em área
+        enemies_hit = 0
+        for enemy in self.enemy_sprites:
+            distance = pygame.Vector2(self.player.rect.center).distance_to(enemy.rect.center)
+            
+            if distance <= self.player.special_range:
+                enemy.health -= self.player.special_damage
+                enemies_hit += 1
+                
+                # Knockback
+                direction = (pygame.Vector2(enemy.rect.center) - pygame.Vector2(self.player.rect.center))
+                if direction.length() > 0:
+                    direction = direction.normalize()
+                    enemy.rect.center += direction * 50
+                
+                if enemy.health <= 0:
+                    self.drop_xp(enemy.rect.center, xp_amount=5)
+                    enemy.kill()
+        
+        self.show_temp_message(f"⚡ ESPECIAL! {enemies_hit} inimigos atingidos!", (255, 255, 0))
+        print(f"⚡ Ataque especial! Atingiu {enemies_hit} inimigos")
+
+    def draw_special_effect(self):
+        """Desenha efeito visual do ataque especial"""
+        if not self.special_effect_active:
+            return
+        
+        current_time = pygame.time.get_ticks()
+        elapsed = current_time - self.special_effect_time
+        
+        if elapsed > self.special_effect_duration:
+            self.special_effect_active = False
+            return
+        
+        # Calcula alpha baseado no tempo
+        alpha = int(255 * (1 - elapsed / self.special_effect_duration))
+        
+        # Círculo expandindo
+        radius = int(self.player.special_range * (elapsed / self.special_effect_duration))
+        
+        # Cria surface temporária
+        effect_surf = pygame.Surface((radius * 2, radius * 2), pygame.SRCALPHA)
+        pygame.draw.circle(effect_surf, (255, 255, 0, alpha), (radius, radius), radius, 5)
+        pygame.draw.circle(effect_surf, (255, 200, 0, alpha // 2), (radius, radius), radius // 2, 3)
+        
+        # Desenha centralizado no player (com offset da câmera)
+        player_screen_pos = pygame.Vector2(self.player.rect.center) + self.all_sprites.offset
+        effect_pos = player_screen_pos - pygame.Vector2(radius, radius)
+        self.display_surface.blit(effect_surf, effect_pos)
+
+    def special_attack_timer(self):
+        """Gerencia cooldown do ataque especial"""
+        if not self.can_use_special:
+            current_time = pygame.time.get_ticks()
+            if current_time - self.player.last_special_time >= self.player.special_cooldown:
+                self.can_use_special = True
+                self.show_temp_message("⚡ Especial disponível!", (0, 255, 255))
+
     def input(self):
         if pygame.mouse.get_pressed()[0] and self.can_shoot and not self.game_over:
             if self.rock_inventory > 0:
@@ -480,6 +583,42 @@ class Game:
         time_text = self.ui_font.render(f"Tempo: {int(self.game_time)}s", True, (200, 200, 200))
         self.display_surface.blit(time_text, (self.window_width - 230, 115))
 
+        special_bg = pygame.Surface((220, 70))
+        special_bg.set_alpha(150)
+        special_bg.fill((0, 0, 0))
+        self.display_surface.blit(special_bg, (10, 350))
+
+        special_label = self.ui_font.render("ESPECIAL (E)", True, (255, 255, 0))
+        self.display_surface.blit(special_label, (20, 355))
+
+        if self.can_use_special:
+            ready_text = self.hud_font.render("PRONTO!", True, (0, 255, 0))
+            self.display_surface.blit(ready_text, (20, 380))
+        else:
+            # Barra de cooldown
+            current_time = pygame.time.get_ticks()
+            cooldown_percent = (current_time - self.player.last_special_time) / self.player.special_cooldown
+            
+            bar_width = 180
+            bar_height = 15
+            bar_x = 20
+            bar_y = 390
+            
+            # Fundo
+            pygame.draw.rect(self.display_surface, (50, 50, 50), (bar_x, bar_y, bar_width, bar_height))
+            
+            # Progresso
+            current_bar_width = int(bar_width * cooldown_percent)
+            pygame.draw.rect(self.display_surface, (255, 200, 0), (bar_x, bar_y, current_bar_width, bar_height))
+            
+            # Borda
+            pygame.draw.rect(self.display_surface, (255, 255, 255), (bar_x, bar_y, bar_width, bar_height), 2)
+            
+            # Tempo restante
+            remaining = (self.player.special_cooldown - (current_time - self.player.last_special_time)) // 1000
+            time_text = self.ui_font.render(f"{remaining}s", True, (255, 255, 255))
+            self.display_surface.blit(time_text, (bar_x + bar_width + 10, bar_y - 3))
+
     def draw_attribute_menu(self):
         bg_color = (40, 40, 40)
         border_color = "white"
@@ -664,6 +803,9 @@ class Game:
         pygame.time.set_timer(self.enemy_event, self.enemy_spawn_rate)
         
         print("Jogo resetado!")
+        self.can_use_special = True
+        self.screen_shake = 0
+        self.special_effect_active = False
     
     def apply_attribute_upgrade(self, upgrade_key):
         if self.attribute_points <= 0:
@@ -711,6 +853,9 @@ class Game:
 
                         if event.key == pygame.K_h:
                             self.use_banana()
+                        
+                        if event.key == pygame.K_e:
+                            self.use_special_attack()
 
                         if self.show_attributes and self.attribute_points > 0:
                             if event.key == pygame.K_1:
@@ -781,6 +926,8 @@ class Game:
                     self.gun_timer()
                     self.punch_timer()
                     self.invincibility_timer()
+                    self.special_attack_timer()  
+                    self.apply_screen_shake()
                     self.input()
                     self.input_punch()
                     if self.mira:
@@ -822,7 +969,7 @@ class Game:
                     if not self.player_invincible or (pygame.time.get_ticks() // 100) % 2:
                         player_screen_pos = self.player.rect.topleft + self.all_sprites.offset
                         self.display_surface.blit(self.player.image, player_screen_pos)
-                
+                self.draw_special_effect()
                 for punch in self.punch_sprites:
                     punch_screen_pos = punch.rect.topleft + self.all_sprites.offset
                     self.display_surface.blit(punch.image, punch_screen_pos)
