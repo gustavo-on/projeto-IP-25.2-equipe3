@@ -838,6 +838,9 @@ class Game:
                     if result == "start_game":
                         self.game_state = "playing"
                         pygame.mouse.set_visible(False)
+                        pygame.mixer.music.load('assets/sounds/MusicaJogo.mp3') # Troque pelo nome real
+                        pygame.mixer.music.play(-1)
+                        pygame.mixer.music.set_volume(0.4)
                     elif result == "quit":
                         self.running = False
 
@@ -912,6 +915,9 @@ class Game:
                         self.reset_game()
                         self.game_state = "playing"
                         pygame.mouse.set_visible(False)
+                        pygame.mixer.music.load('assets/sounds/MusicaJogo.mp3') # Troque pelo nome real
+                        pygame.mixer.music.play(-1)
+                        pygame.mixer.music.set_volume(0.4)
                     elif result == "quit":
                         self.running = False
 
@@ -957,6 +963,7 @@ class Game:
                                 if self.player.current_health <= 0:
                                     self.game_over = True
                                     self.game_state = "game_over"
+                                    pygame.mixer.music.stop()
                                     # CORRIGIDO: passa apenas 2 argumentos (score e level)
                                     self.game_over_screen.set_stats(self.score, self.player.level)
                                     pygame.mouse.set_visible(True)
