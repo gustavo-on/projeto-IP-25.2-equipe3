@@ -32,6 +32,7 @@ Projeto da disciplina de Introdução à Programação 2025.2 (CC/IA) - UFPE
     -O personagem principal(Gorila filósofo), se desloca pelo mapa coletando xp, bananas, moedas e pedra.
 
 # 4. Estrutura e Organização do código
+```text
 📂 projeto
 ├── 📂 assets                # Recursos visuais e sonoros
 │   ├── 📂 images
@@ -56,6 +57,7 @@ Projeto da disciplina de Introdução à Programação 2025.2 (CC/IA) - UFPE
     ├── aim.py               # Sistema de mira
     ├── store.py             # Loja / atributos
     └── utilidades           # Sprites, entidades e botões
+```
 
 # 5. Capturas de tela:
 <img width="946" height="633" alt="image" src="https://github.com/user-attachments/assets/c56d518b-ea17-4a0a-8f31-e568699fbbd3" />
