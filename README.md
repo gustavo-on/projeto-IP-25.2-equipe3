@@ -123,7 +123,7 @@ Entretanto, ele é capturado por um grupo de calouros do **CIn**, sendo forçado
 
 ### 1. Clone o repositório
 ```bash
-git clone [https://github.com/gustavo-on/projeto-IP-25.2-equipe3.git](https://github.com/gustavo-on/projeto-IP-25.2-equipe3.git)
+git clone https://github.com/gustavo-on/projeto-IP-25.2-equipe3.git
 cd projeto-IP-25.2-equipe3
 ```
 ### 2. Instale as dependências
