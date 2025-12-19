@@ -38,7 +38,6 @@ Projeto da disciplina de Introdução à Programação 2025.2 (CC/IA) - UFPE
 
 <img width="945" height="631" alt="image" src="https://github.com/user-attachments/assets/a1b7e4ad-0677-49df-bdc8-e95c6a87c499" />
 
-
 <img width="1917" height="985" alt="image" src="https://github.com/user-attachments/assets/116c2af5-202d-4c66-85ff-110391a16672" />
 
 <img width="1065" height="826" alt="image" src="https://github.com/user-attachments/assets/c47ca993-61c6-4122-9f20-801141994b8b" />
@@ -50,7 +49,7 @@ Projeto da disciplina de Introdução à Programação 2025.2 (CC/IA) - UFPE
 # 6. Ferramentas, bibliotecas, frameworks:
   -Ferramentas utilizadas:
   
-    -Pygamece(Biblioteca usada para o desenvolvimento de jogos 2D na linguagem Python - (Linguagem utilizda durante a cadeira de Introdução à Programação 2025.2 (CC/IA) - UFPE)
+    -Pygame(Biblioteca usada para o desenvolvimento de jogos 2D na linguagem Python - (Linguagem utilizda durante a cadeira de Introdução à Programação 2025.2 (CC/IA) - UFPE)
 
     -Vscode(Editor de código (utilisado para escrever, depurar e testar código em diversas linguagens-nesse projeto a linguagem de programação uitlizada foi Python), introduzido e utilizado durante a cadeira de Introdução à Programação 2025.2 (CC/IA) - UFPE)
     
@@ -92,9 +91,12 @@ Projeto da disciplina de Introdução à Programação 2025.2 (CC/IA) - UFPE
   -Estruturas condicionais: Controlam a resposta dada caso uma condição seja verdadira. Exemplo: Caso o jogador acione a tecla W o personagem principal andará para cima.
   -Programação orientada a Objetos: Uma forma de elaboração do código do jogo, com classes, atributos e métodos.
   -Funções: Um agrupamento de um bloco de código que pode ser utilizado em diversas partes do código.
+  
 # 9. Desafios, erros e aprendizados:
   -Qual foi o maior erro cometido durante o projeto? Como vocês lidaram com ele?
-    -Tempo escasso se revelou um problema que acometeu a realização do projeto, mas com afinco foi possível superar algumas dessas questões realcionadas ao tempo curto.
+  
+    -Tempo escasso se revelou um problema que acometeu vários aspectos da realização do projeto, mas com afinco foi possível superar algumas dessas questões realcionadas ao tempo curto. dentre esses aspectos, encontramos uma dificuldade na hora de importar o mapa
+    
   -Qual foi o maior desafio enfrentado durante o projeto? Como vocês lidaram com ele?
   
     -Aprendizado de novas ferramentas e conceitos (OOP) em pouco tempo. A gestão do tempo em meio a diversos compromissos e tarefas associados ao projeto,e outros compromissos não relacionados ao projeto, foi ,de fato, desafiador.
