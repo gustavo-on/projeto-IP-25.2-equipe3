@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="130" height="130" tilewidth="64" tileheight="64" infinite="0" nextlayerid="7" nextobjectid="5520">
- <tileset firstgid="1" source="../projeto-IP-25.2-equipe3/data/tilesets/world_tileset.tsx"/>
- <tileset firstgid="211" source="../projeto-IP-25.2-equipe3/data/tilesets/Objects.tsx"/>
- <tileset firstgid="225" source="data-20251218T154616Z-3-001/data/tilesets/world_tileset.tsx"/>
+ <tileset firstgid="1" source="../tilesets/world_tileset.tsx"/>
+ <tileset firstgid="211" source="../tilesets/Objects.tsx"/>
+ <tileset firstgid="225" source="../../../Downloads/data-20251218T154616Z-3-001/data/tilesets/world_tileset.tsx"/>
  <layer id="1" name="Ground" width="130" height="130">
   <data encoding="csv">
 42,42,42,42,42,42,85,85,75,75,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,85,

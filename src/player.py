@@ -33,7 +33,7 @@ class Player(Entity):
         # Movimento
         self.collision_sprites = collision_sprites
         self.direction = pygame.Vector2(0, 0)
-        self.speed = 500
+        self.speed = 300
         
         # Especial
         self.special_cooldown = 10000
