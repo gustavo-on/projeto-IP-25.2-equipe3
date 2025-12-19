@@ -32,7 +32,31 @@ Projeto da disciplina de Introdução à Programação 2025.2 (CC/IA) - UFPE
     -O personagem principal(Gorila filósofo), se desloca pelo mapa coletando xp, bananas, moedas e pedra.
 
 # 4. Estrutura e Organização do código
-  - O código foi elaborado e organizado em classees, atributos e métodos.
+📂 projeto
+├── 📂 assets                # Recursos visuais e sonoros
+│   ├── 📂 images
+│   │   ├── 📂 player        # Sprites do jogador (left/right)
+│   │   ├── 📂 enemy         # Sprites dos inimigos (left/right)
+│   │   └── sprites gerais  # Coletáveis, UI e telas
+│   └── 📂 sounds            # Trilha sonora do jogo
+│
+├── 📂 data                  # Dados do mundo do jogo
+│   ├── 📂 graphics
+│   │   ├── 📂 objects       # Objetos do cenário
+│   │   └── 📂 tilesets      # Tilesets gráficos
+│   ├── 📂 maps              # Mapas (.tmx)
+│   └── 📂 tilesets          # Definições dos tiles (.tsx)
+│
+└── 📂 src                   # Código-fonte
+    ├── main.py              # Ponto de entrada do jogo
+    ├── player.py            # Lógica do jogador
+    ├── enemies.py           # Lógica dos inimigos
+    ├── coletaveis.py        # Sistema de coletáveis
+    ├── collision.py         # Detecção de colisões
+    ├── aim.py               # Sistema de mira
+    ├── store.py             # Loja / atributos
+    └── utilidades           # Sprites, entidades e botões
+
 # 5. Capturas de tela:
 <img width="946" height="633" alt="image" src="https://github.com/user-attachments/assets/c56d518b-ea17-4a0a-8f31-e568699fbbd3" />
 
